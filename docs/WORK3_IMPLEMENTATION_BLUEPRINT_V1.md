@@ -11,7 +11,7 @@ Status: DRAFT（待 Research Director／Executive User 驗收）
 Upstream: CPO AI Work-2 Contract Freeze V1.0；Work-1 Technical
 Specification Baseline V1；Project Charter Freeze V1.0（FROZEN）
 
-版本：V1.1（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Claude
+版本：V1.2（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Claude
 Code-1 --- Repository Foundation
 
 > V1.1 變更：新增 §5.3 語言與工具鏈補充，同步 CLAUDE.md §5／§7；依
@@ -30,6 +30,12 @@ Code-1 --- Repository Foundation
 > §2.9 之原始資料表與 `model_version`；**WBS-B5** 建置 §2.9 之模型輸出表；
 > **TEST-PIT-01** 之 `shares_outstanding` 位於 `market_data`；**TEST-CMI-01**
 > 之「availability time」＝ `available_at`。WBS 表與 §4 內文不逐列改寫。
+>
+> V1.2：`docs/decisions/ADR-0004-cfl-order-rbac.md`（RD／EU 核可）——
+> (a) §2 DAG B1 列加「G01 介面樁」、B8 列改為「規則引擎（替換 B1 樁）」；
+> (b) CFL-04 分工＝M05 算分/raise、A04 只建議、G01 判定；
+> (c) W04 管線傳輸＝Temporal workflow/activity/signal + `event` 表 outbox，V1 不加 broker；
+> (d) Work-2 §4.4 補齊 OIDC/JWT + 六角色 RBAC 矩陣。
 
 **0. 文件控制**
 
@@ -114,7 +120,7 @@ UI → Reporting → Governance → Tests），展開為 CPO AI
                                 全部契約文件（DATA_MODEL／EVENT_CONTRACT／CFL_CONTRACT／API_SPEC／AGENT_SPEC）＋本文件   
                                 CLAUDE.md                                                                                
 
-  B1         資料庫             I01 關聯式資料庫、I02 物件／快照儲存（K01--K06 schema migration）                        B0
+  B1         資料庫             I01 關聯式資料庫、I02 物件／快照儲存（K01--K06 + §2.9 schema migration）；G01 介面樁（`cfl_status` 欄位/enum、狀態機常數、`cfl` service 介面，預設 PENDING、禁直寫）        B0
 
   B2         Source Registry    D01--D08 來源登錄、P03 快照／版本控制器                                                  B1
 
@@ -130,7 +136,7 @@ UI → Reporting → Governance → Tests），展開為 CPO AI
 
   B7         工作流程引擎       W01--W06（排程、佇列、Fan-out/Fan-in、每日管線、重試、Batch Parsing）；I04 部署          B6
 
-  B8         治理               G01 CFL 規則引擎、G03 稽核日誌、G06 發布狀態機、G07 Change Control、G08 合規監控         B7
+  B8         治理               G01 CFL 規則引擎（各 CFL 之 AUTO-PASS/REVIEW-REQUIRED 邏輯、outbox 至 U04；替換 B1 介面樁，不動呼叫端）、G03 稽核日誌、G06 發布狀態機、G07 Change Control、G08 合規監控         B7
 
   B9         API                U05 匯出／API 層；第 4 節端點清單全數實作                                                B8
 

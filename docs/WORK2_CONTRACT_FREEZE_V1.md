@@ -12,7 +12,7 @@ Director／Executive User 驗收）
 Upstream: CPO AI Work-1 Technical Specification Baseline
 V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 
-版本：V1.2（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
+版本：V1.3（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
 --- Implementation Blueprint
 
 > **V1.1 變更（`docs/decisions/ADR-0002-naming.md`，RD／EU 核可）**：欄位消歧，不改語意／enum、不觸及 Charter 凍結面。
@@ -22,6 +22,9 @@ V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 > (4) §2.1 新增 `available_at`（低頻資料可取得時間，CF-26／GP-09）。
 > (5) §2.6 K05 新增 `revision_seq`。
 > (6) 新增 §2.9：market_data／institutional_trading／shareholding／person／seco_score／cmi_score／valuation_event_window／research_report 八張表（逐欄型別待 B1／B5 依 ADR-0003 訂定）。
+>
+> **V1.3 變更（`docs/decisions/ADR-0004-cfl-order-rbac.md`，RD／EU 核可）**：
+> (7) §4.4 補齊認證（OIDC/JWT）與 RBAC 六角色矩陣（原「待 Work-3 補齊」佔位取代）。
 
 **0. 文件控制**
 
@@ -36,7 +39,7 @@ V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
                    Data／Event／API／CFL／Agent 契約；不產出 business
                    code，不做技術選型最終確認
 
-  版本             V1.2（V1.1 欄位消歧 + V1.2 契約缺口補齊；V1.0 基線見 git）
+  版本             V1.3（V1.1 欄位消歧 + V1.2 契約缺口補齊 + V1.3 §4.4 認證/RBAC；V1.0 基線見 git）
 
   狀態             DRAFT --- 待 Research Director／Executive User
                    驗收後方可進入 Work-3
@@ -460,11 +463,33 @@ Work-3 依 W04 管線逐一展開明細表。
                    或狀態被 BLOCKED 之情形
   --------------------------------------------------------------------
 
-**4.4 認證與權限**
+**4.4 認證與權限（V1.3，依 `docs/decisions/ADR-0004-cfl-order-rbac.md`）**
 
-*【待 Work-3 補齊】角色權限對照表需依 Charter §5 六類使用者角色與 G05
-RBAC 設計展開為完整清單，此屬 Work-3／CLAUDE.md
-之工作範圍；本文件僅確立「四權分離」為強制設計原則（見 4.1、第 6 節）。*
+**認證**：OAuth2／OIDC bearer（JWT），由外部 IdP 簽發；API 驗證 JWT 後將
+claims 對映至 Charter §5 六類角色。`OIDC_ISSUER`／`OIDC_AUDIENCE`／
+`OIDC_JWKS_URL` 一律經環境變數注入（CLAUDE.md §9）。
+
+**RBAC 矩陣**（角色 × 端點功能群組；強制 GP-21 四權分離）：
+
+  ------------------------------------------------------------------------------------------------
+  **角色**                讀   Evidence／實體寫   模型執行   審查佇列   核准／發布   Ops／設定
+  ----------------------- ---- ----------------- ---------- ---------- ------------ -------------
+  Research Director        ✓    –                 –          ✓          ✓            –
+
+  Semiconductor Analyst    ✓    ✓                 –          –          –            –
+
+  Quant Researcher         ✓    –                 ✓          –          –            –
+
+  Research Reviewer        ✓    –                 –          ✓          –            –
+
+  Executive User           ✓（摘要）  –           –          –          –            –
+
+  System Administrator     ✓    –                 –          –          –            ✓
+  ------------------------------------------------------------------------------------------------
+
+無任一角色同時具「Evidence／實體寫」與「核准／發布」→ 符合 GP-21／CF-46。
+端點→功能群組之細目對照留待 WBS-B9 依本矩陣展開，不得新增跨權組合。
+Agent 帳號（A01–A08）之權限由 G05 依同一矩陣精神設定（Work-1 §5、第 6 節）。
 
 **5. CFL Contract --- CFL_CONTRACT.md（Charter §17 為唯一有效版本）**
 
