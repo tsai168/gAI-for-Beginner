@@ -11,8 +11,12 @@ Status: DRAFT（待 Research Director／Executive User 驗收）
 Upstream: CPO AI Work-2 Contract Freeze V1.0；Work-1 Technical
 Specification Baseline V1；Project Charter Freeze V1.0（FROZEN）
 
-版本：V1.0　　日期：2026-09-10　　Next Gate: Claude Code-1 ---
-Repository Foundation
+版本：V1.1（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Claude
+Code-1 --- Repository Foundation
+
+> V1.1 變更：新增 §5.3 語言與工具鏈補充，同步 CLAUDE.md §5／§7；依
+> `docs/decisions/ADR-0001-toolchain.md`。不涉及 Charter 凍結面或 Work-2
+> 契約欄位（Charter §7／§31「小幅調整」）。
 
 **0. 文件控制**
 
@@ -281,6 +285,24 @@ Data／Event Contract）。**
 
 *以上兩項決議回應 Work-1 TQ-02，不構成 Charter Frozen Decision
 之變更，僅為 Work-3 階段之工程實作選型。*
+
+**5.3 語言與工具鏈補充（V1.1，2026-09-10）**
+
+CLAUDE.md §5／§7 之「待補充」工具鏈欄位已於 Claude Code-1 開工前定案，權威記錄見
+`docs/decisions/ADR-0001-toolchain.md`（經 Research
+Director／Executive User 核可）。摘要：
+
+- 語言 Python 3.12；DB PostgreSQL 16 + pgvector；Migration Alembic
+- 工作流程 SDK `temporalio`（Python）；API FastAPI + Pydantic v2
+- 科學計算 numpy／pandas／statsmodels／scipy
+- LLM 供應商 Claude（Anthropic），`anthropic` Python SDK；model
+  id／token budget 以設定值注入（Deferred，不寫死）
+- 型別 Mypy（src strict）；低風險預設 uv、Ruff（team 可替換）
+- UI（B10）暫定 React + TypeScript + Vite，另立 ADR 再議
+- 測試指令：見 ADR-0001 §4 與 CLAUDE.md §7
+
+本補充不觸及 Charter 凍結面與 Work-2 契約欄位，依 Charter §7／§31
+屬「小幅調整」，CLAUDE.md 與本文件同步升 V1.1，不開新 Charter 版本。
 
 **6. CLAUDE.md 定位與重點摘要**
 

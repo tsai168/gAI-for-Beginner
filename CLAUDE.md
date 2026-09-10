@@ -54,9 +54,19 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 
 ## 5. 程式語言、框架與技術選型
 
+> 語言／框架／Lint 於 2026-09-10 定案，見 `/docs/decisions/ADR-0001-toolchain.md`（不構成 Charter §31 CR；CLAUDE.md 升 V1.1）。
+
 - I04 工作流程引擎：Temporal（或 Temporal Cloud）— 依 Work-3 §5.1 決議
 - I05 向量／語意儲存：pgvector（PostgreSQL 擴充）— 依 Work-3 §5.2 決議
-- 其餘語言／框架／Lint／格式化指令：**待團隊於 Claude Code-1 開工時於本節補充確認**
+- 語言：**Python 3.12**
+- 關聯式資料庫：**PostgreSQL 16**；Migration：**Alembic**（新增檔，不得改寫／刪除既有）
+- 工作流程 SDK：**`temporalio`（Python）**
+- API 框架（B9／U05）：**FastAPI + Pydantic v2**（schema 對映 Work-2 DATA_MODEL／EVENT_CONTRACT 欄位名，不得另創別名）
+- 科學計算（M06／M07／M08）：`numpy`、`pandas`、`statsmodels`、`scipy`
+- LLM 供應商：**Claude（Anthropic）**，`anthropic` Python SDK；model id／token budget／wake-up 參數一律以環境變數／設定值注入（Deferred，不寫死）
+- 型別檢查：**Mypy**（`src/` strict）
+- 低風險預設（team 可替換，不影響契約）：依賴管理 **uv**（可換 Poetry）；Lint／格式化 **Ruff**（可換 Black + isort）
+- UI 技術堆疊（B10／U01–U04）：**暫定** React + TypeScript + Vite，B10 前另立 ADR 再議
 
 ## 6. 資料契約與命名規則
 
@@ -68,7 +78,12 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 
 - 每完成一個 WBS 批次（見 Work-3 §2、§3），須依序執行：單元測試 → 整合測試 → migration 測試 → lint／型別檢查，全數通過才可 commit
 - 完整驗收標準見 `/docs/WORK3_IMPLEMENTATION_BLUEPRINT_V1.md` 第 4 節 Acceptance Tests（TEST-DATA-01 起）
-- 測試指令：**待團隊於 Claude Code-1 開工時於本節補充**
+- 測試指令（定案 2026-09-10，見 `/docs/decisions/ADR-0001-toolchain.md`）：
+  - 單元：`pytest -m "not integration and not migration"`
+  - 整合：`pytest -m integration`（需 Postgres + Temporal dev）
+  - migration：`pytest -m migration` 並 `alembic upgrade head && alembic downgrade base && alembic upgrade head`
+  - lint／型別：`ruff check . && ruff format --check . && mypy src`
+  - 一鍵：`make check`（依上述順序，全綠才可 commit）
 
 ## 8. 分批施工規則
 
@@ -97,3 +112,5 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 
 ---
 *本檔案為 Work-3 Implementation Blueprint 之隨附文件，任何修改須依 Charter §31 Change Control 流程處理，並同步更新 Work-3 規格書。*
+
+**版本：V1.1（2026-09-10）** — §5／§7 工具鏈與測試指令補充，依 `/docs/decisions/ADR-0001-toolchain.md`；不涉及契約內容變更（CLAUDE.md §11、Charter §7／§31「小幅調整」）。V1.0 → 見 git 歷史。
