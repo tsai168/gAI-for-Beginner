@@ -22,6 +22,14 @@ Code-1 --- Repository Foundation
 > V1.1（`status`→`pipeline_status`＋`lifecycle_status`、`valid_from/valid_to`
 > 統一）。本文件 §4 Acceptance Tests 之 TEST-DATA-01／TEST-EVENT-01／02
 > 依「與 DATA_MODEL 一致」原則自動沿用新欄位名，內文不另改。
+>
+> `docs/decisions/ADR-0003-schema-gaps.md`（契約缺口補齊）令 Work-2 升
+> V1.2：新增 §2.9 八張表（market_data／institutional_trading／shareholding／
+> person／seco_score／cmi_score／valuation_event_window／research_report）、
+> `available_at`、`revision_seq`。影響——**WBS-B1／B2** 除 K01–K06 外一併建置
+> §2.9 之原始資料表與 `model_version`；**WBS-B5** 建置 §2.9 之模型輸出表；
+> **TEST-PIT-01** 之 `shares_outstanding` 位於 `market_data`；**TEST-CMI-01**
+> 之「availability time」＝ `available_at`。WBS 表與 §4 內文不逐列改寫。
 
 **0. 文件控制**
 

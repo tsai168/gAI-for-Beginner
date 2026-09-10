@@ -12,15 +12,16 @@ Director／Executive User 驗收）
 Upstream: CPO AI Work-1 Technical Specification Baseline
 V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 
-版本：V1.1（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
+版本：V1.2（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
 --- Implementation Blueprint
 
-> **V1.1 變更（依 `docs/decisions/ADR-0002-naming.md`，經 Research
-> Director／Executive User 核可）**：欄位消歧，不改語意、不觸及 Charter
-> 凍結面（Charter §31「小幅且不改變研究契約的調整」）。
-> (1) §2.6 K05 `status` → `lifecycle_status`（enum 值不變，CF-36）。
-> (2) §3.1 通用事件欄位 `status` → `pipeline_status`（狀態機不變，§3.2）。
-> (3) §2.3 K02 `effective_from／effective_to` → `valid_from／valid_to`（統一 §2.1 通用命名）。
+> **V1.1 變更（`docs/decisions/ADR-0002-naming.md`，RD／EU 核可）**：欄位消歧，不改語意／enum、不觸及 Charter 凍結面。
+> (1) §2.6 K05 `status` → `lifecycle_status`。(2) §3.1 事件欄位 `status` → `pipeline_status`。(3) §2.3 K02 `effective_from／effective_to` → `valid_from／valid_to`。
+>
+> **V1.2 變更（`docs/decisions/ADR-0003-schema-gaps.md`，RD／EU 核可）**：補契約缺口，皆為新增、不改既有欄位語意（Change Request 依 §2.8／Charter §31）。
+> (4) §2.1 新增 `available_at`（低頻資料可取得時間，CF-26／GP-09）。
+> (5) §2.6 K05 新增 `revision_seq`。
+> (6) 新增 §2.9：market_data／institutional_trading／shareholding／person／seco_score／cmi_score／valuation_event_window／research_report 八張表（逐欄型別待 B1／B5 依 ADR-0003 訂定）。
 
 **0. 文件控制**
 
@@ -35,7 +36,7 @@ V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
                    Data／Event／API／CFL／Agent 契約；不產出 business
                    code，不做技術選型最終確認
 
-  版本             V1.1（欄位消歧補丁；V1.0 基線見 git）
+  版本             V1.2（V1.1 欄位消歧 + V1.2 契約缺口補齊；V1.0 基線見 git）
 
   狀態             DRAFT --- 待 Research Director／Executive User
                    驗收後方可進入 Work-3
@@ -105,6 +106,11 @@ NULL，不得虛假精度填補：
 
   market_known_at                               市場得知時間（Optional／僅        CF-21
                                                 Evidence 使用）                   
+
+  available_at                                  資料在市場／公開實際可取得之時間；   CF-26；
+                                                低頻資料（TDCC 等）必填，供 M04     GP-09
+                                                CMI 判斷 No-Future-Data；與         （V1.2）
+                                                market_known_at 不同               
 
   event_trading_date                            事件研究交易日（Event Study       CF-21
                                                 必填）                            
@@ -211,6 +217,8 @@ NULL，不得虛假精度填補：
 
   revision_of_event_id   指向被修正之原事件（Revision Chain，自我參照）                                 CF-35
 
+  revision_seq           修正鏈序號（整數，同一 event_id 鏈內遞增，起始 1；V1.2 新增）                  CF-35
+
   lifecycle_status       ACTIVE／CORRECTED／SUPERSEDED／WITHDRAWN／DISPUTED（撤回不等於歷史未曾存在；V1.1 由 `status` 更名，enum 不變）   CF-36
 
   event_taxonomy_code    EV01--EV12                                                                     CF-27；M05
@@ -255,6 +263,63 @@ Request（Charter §31），經 Projects 驗收後升版為
 V1.1／V1.2......，不得直接覆寫本文件或既有資料。K02／M03／M04／M05／M02／CFL
 等模型或分類權重變更，一律經 G04 建立新 Model
 Version，不得回填覆寫既有結果（GP-10）。
+
+**2.9 補充實體 Schema（V1.2，依 `docs/decisions/ADR-0003-schema-gaps.md`）**
+
+Charter §9 列 16 個 Core Research Object，§2.2–2.7 僅涵蓋 K01–K06。以下
+7 個物件於 V1.2 補齊為契約實體；逐欄型別留待 Claude Code-1 於 WBS-B1／B5
+依 ADR-0003 訂定（本表僅固定表名、關鍵欄位與依據，型別標「待確認」）。
+K01–K06 編號與 Work-1 §3.3 不變。
+
+原始資料實體（D 層來源，B1／B2／B3 建置）：
+
+  ----------------------------------------------------------------------------------------
+  **表名**                **關鍵欄位（型別待確認）**                         **來源／依據**
+  ----------------------- -------------------------------------------------- -------------
+  market_data             market_data_id(PK)、company_id(FK)、trade_date、   D05；CF-24
+                          close_price、volume、**shares_outstanding**（PIT，  
+                          隨 valid_from/valid_to）、通用時間／稽核欄位       
+
+  institutional_trading   institutional_trading_id(PK)、company_id(FK)、     D05
+                          trade_date、investor_type、net_buy_sell、          
+                          available_at、通用時間／稽核欄位                  
+
+  shareholding            shareholding_id(PK)、company_id(FK)、as_of_date、  D06 TDCC；
+                          bucket、holders、shares、pct、**available_at**（必  CF-26；
+                          填）、通用時間／稽核欄位                          GP-08/09
+
+  person                  person_id(PK)、full_name、role_title、             Charter §9；
+                          affiliation_company_id(FK, nullable)、通用時間／   CF-06
+                          稽核欄位；K04 關係兩端可指向 company 或 person    
+  ----------------------------------------------------------------------------------------
+
+模型輸出／報告實體（B5／B11 建置，皆 Bitemporal、隨 model_version_id）：
+
+  ----------------------------------------------------------------------------------------
+  **表名**                  **關鍵欄位（型別待確認）**                       **模組／依據**
+  ------------------------- ----------------------------------------------- --------------
+  seco_score                seco_score_id(PK)、company_id(FK)、as_of、       M03；
+                            score(0–100)、tech_relevance、product_readiness、CF-12～17
+                            customer_validation、ecosystem_position、        
+                            commercialization、strategic_defensibility、     
+                            confidence、valid_from/valid_to、model_version_id
+
+  cmi_score                 cmi_score_id(PK)、company_id(FK)、as_of、         M04；
+                            score、foreign_inst_momentum、                   CF-18/19；
+                            domestic_inst_momentum、margin_short、           GP-08
+                            ownership_concentration、trading_structure、      
+                            valid_from/valid_to、model_version_id            
+
+  valuation_event_window    valuation_event_window_id(PK)、event_id(FK)、    M06；
+                            window(\[-N,+M\])、benchmark_model、ar、car、     CF-20/23/24
+                            market_cap、model_version_id                     
+
+  research_report           research_report_id(PK)、report_type、subject_ref、R02；
+                            version、publication_tier、cfl_status、           CF-33；
+                            content_ref、model_version_id、通用稽核欄位      Charter §18
+  ----------------------------------------------------------------------------------------
+
+Seco／Confidence 構面欄位命名依 ADR-0002（具名，不用 S1..S6／CF1..CF5）。
 
 **3. Event Contract --- EVENT_CONTRACT.md**
 

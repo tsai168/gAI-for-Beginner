@@ -50,7 +50,7 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 - **不得在 CMI／Seco 等計算中使用未來資料**（No Future Data，GP-08／CF-26），即禁止 backward filling
 - **不得覆寫既有 Model Version 的計算結果**（GP-10）；任何權重或公式變更須建立新版本
 - **不得將 Deferred Items**（Wake-up Window、Batch 參數、Token Budget 等，見 Work-1 §8／Work-3 §1）**當作已凍結參數寫死**於程式碼中；應以設定值／掛勾點形式保留
-- **不得**將時間欄位（occurred_at／published_at／market_known_at 等）在缺失時填入猜測值，一律保持 `NULL`
+- **不得**將時間欄位（occurred_at／published_at／market_known_at／available_at 等）在缺失時填入猜測值，一律保持 `NULL`（`available_at` 於低頻資料為必填，缺失即不得進入 M04 CMI，見 Work-2 §2.1／ADR-0003）
 
 ## 5. 程式語言、框架與技術選型
 
@@ -119,3 +119,4 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 **版本沿革**（皆為 Charter §7／§31「小幅且不改變研究契約的調整」，非 Charter §31 CR；V1.0 → 見 git 歷史）
 - **V1.1（2026-09-10）** — §5／§7 工具鏈與測試指令補充，依 `/docs/decisions/ADR-0001-toolchain.md`
 - **V1.2（2026-09-10）** — §6 欄位消歧（`status`→`pipeline_status`＋`lifecycle_status`、`valid_from/valid_to` 統一、命名慣例），依 `/docs/decisions/ADR-0002-naming.md`；Work-2 同步升 V1.1
+- **V1.3（2026-09-10）** — §4 新增 `available_at`（低頻資料必填、缺失不入 CMI），依 `/docs/decisions/ADR-0003-schema-gaps.md`；Work-2 同步升 V1.2（新增 §2.9 八張補充表、`available_at`、`revision_seq`）
