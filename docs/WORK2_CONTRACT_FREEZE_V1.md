@@ -12,7 +12,7 @@ Director／Executive User 驗收）
 Upstream: CPO AI Work-1 Technical Specification Baseline
 V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 
-版本：V1.3（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
+版本：V1.4（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
 --- Implementation Blueprint
 
 > **V1.1 變更（`docs/decisions/ADR-0002-naming.md`，RD／EU 核可）**：欄位消歧，不改語意／enum、不觸及 Charter 凍結面。
@@ -25,6 +25,9 @@ V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 >
 > **V1.3 變更（`docs/decisions/ADR-0004-cfl-order-rbac.md`，RD／EU 核可）**：
 > (7) §4.4 補齊認證（OIDC/JWT）與 RBAC 六角色矩陣（原「待 Work-3 補齊」佔位取代）。
+>
+> **V1.4 變更（`docs/decisions/ADR-0006-confirmations.md`，RD／EU 核可）**：
+> (8) §3.3 註明事件型別目錄產出於 WBS-B7（`docs/EVENT_CATALOGUE.md`），傳輸層 = Temporal + `event` 表 outbox。
 
 **0. 文件控制**
 
@@ -39,7 +42,7 @@ V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
                    Data／Event／API／CFL／Agent 契約；不產出 business
                    code，不做技術選型最終確認
 
-  版本             V1.3（V1.1 欄位消歧 + V1.2 契約缺口補齊 + V1.3 §4.4 認證/RBAC；V1.0 基線見 git）
+  版本             V1.4（V1.1 消歧 / V1.2 缺口 / V1.3 §4.4 認證 / V1.4 §3.3 事件目錄；V1.0 基線見 git）
 
   狀態             DRAFT --- 待 Research Director／Executive User
                    驗收後方可進入 Work-3
@@ -396,8 +399,13 @@ APPROVED → PUBLISHED**
 **3.3 事件與模組觸發對應（Topic 命名模板）**
 
 建議命名規則：cpoai.\<layer\>.\<event_type\>，例如
-cpoai.ingestion.source_fetched、cpoai.knowledge.event_revised、cpoai.governance.cfl_decision。實際事件種類需於
-Work-3 依 W04 管線逐一展開明細表。
+cpoai.ingestion.source_fetched、cpoai.knowledge.event_revised、cpoai.governance.cfl_decision。
+
+*V1.3（ADR-0006）：完整事件型別目錄留待 **WBS-B7** 開工時產出
+`docs/EVENT_CATALOGUE.md`（逐一列 `cpoai.<layer>.<event_type>`）；B3–B6
+先用最小集，B7 補全。傳輸層＝Temporal workflow/activity/signal + `event`
+表 outbox（ADR-0004），`<layer>` 用資料夾名（ingestion／knowledge／
+models／agents／workflows／reports／governance／api／ui）。*
 
 **4. API Contract --- API_SPEC.yaml 大綱**
 

@@ -29,9 +29,13 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
   /governance   G01–G08
   /api          U05／對外 API 層
   /ui           U01–U04
-/infra          I01–I06（資料庫 migration、部署設定）
+/infra          I01–I06（部署設定、docker-compose、CI）
+  /db/migrations Alembic migration（`alembic.ini` 於 repo 根，script_location = infra/db/migrations）
 /tests          單元／整合／E2E 測試
+/docs/decisions ADR（工程決策記錄，ADR-0001 起）
 ```
+
+> §2 路徑於 V1.4 補實（migration 目錄、ADR 目錄），依 `/docs/decisions/ADR-0005-batch-allocation.md`。
 
 ## 3. 允許執行的操作
 
@@ -120,3 +124,4 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 - **V1.1（2026-09-10）** — §5／§7 工具鏈與測試指令補充，依 `/docs/decisions/ADR-0001-toolchain.md`
 - **V1.2（2026-09-10）** — §6 欄位消歧（`status`→`pipeline_status`＋`lifecycle_status`、`valid_from/valid_to` 統一、命名慣例），依 `/docs/decisions/ADR-0002-naming.md`；Work-2 同步升 V1.1
 - **V1.3（2026-09-10）** — §4 新增 `available_at`（低頻資料必填、缺失不入 CMI），依 `/docs/decisions/ADR-0003-schema-gaps.md`；Work-2 同步升 V1.2（新增 §2.9 八張補充表、`available_at`、`revision_seq`）
+- **V1.4（2026-09-10）** — §2 補實 migration／ADR 目錄路徑，依 `/docs/decisions/ADR-0005-batch-allocation.md`。相關：Work-2 → V1.4、Work-3 → V1.2（B0.5、I03/I05/I06/G04 批次歸屬）。ADR-0004（CFL-04 分工／G01 樁／傳輸／RBAC）與 ADR-0006（B7/B9 展開項確認）亦於同日核可。

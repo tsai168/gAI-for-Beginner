@@ -36,6 +36,13 @@ Code-1 --- Repository Foundation
 > (b) CFL-04 分工＝M05 算分/raise、A04 只建議、G01 判定；
 > (c) W04 管線傳輸＝Temporal workflow/activity/signal + `event` 表 outbox，V1 不加 broker；
 > (d) Work-2 §4.4 補齊 OIDC/JWT + 六角色 RBAC 矩陣。
+>
+> V1.2（續）：`docs/decisions/ADR-0005-batch-allocation.md` 與
+> `ADR-0006-confirmations.md`（RD／EU 核可）—— §2 DAG 新增 **B0.5**
+> 基礎環境；I05→B1、I03→B5、G04 `model_version` 表→B1；migration 目錄
+> `infra/db/migrations/`；Seco/CMI 大幅變動走 G08 Material Review 旗標（非
+> 新 CFL）；K04 多型參照用單欄+type 欄；TQ-03 Kappa 不納入 V1；TQ-04 γ
+> 維持 Phase 2；event 目錄、error_code、端點細目分別於 B7／B9 展開。
 
 **0. 文件控制**
 
@@ -120,7 +127,9 @@ UI → Reporting → Governance → Tests），展開為 CPO AI
                                 全部契約文件（DATA_MODEL／EVENT_CONTRACT／CFL_CONTRACT／API_SPEC／AGENT_SPEC）＋本文件   
                                 CLAUDE.md                                                                                
 
-  B1         資料庫             I01 關聯式資料庫、I02 物件／快照儲存（K01--K06 + §2.9 schema migration）；G01 介面樁（`cfl_status` 欄位/enum、狀態機常數、`cfl` service 介面，預設 PENDING、禁直寫）        B0
+  B0.5       基礎環境           I06 最小化：`docker-compose.yml`（Postgres 16 + Temporal dev）＋ CI（lint/型別/測試 workflow）；`.env.example`（列名不填值）        B0
+
+  B1         資料庫             I01 關聯式資料庫、I02 物件／快照儲存、**I05 pgvector extension**（K01--K06 + §2.9 schema migration，含 `model_version` 表）；G01 介面樁（`cfl_status` 欄位/enum、狀態機常數、`cfl` service 介面，預設 PENDING、禁直寫）        B0.5
 
   B2         Source Registry    D01--D08 來源登錄、P03 快照／版本控制器                                                  B1
 
@@ -129,7 +138,7 @@ UI → Reporting → Governance → Tests），展開為 CPO AI
   B4         知識庫             K01 公司、K02 技術／Taxonomy、K03 產品、K04 關係、K05 事件、K06 證據；G04 版本註冊中心   B3
 
   B5         分析引擎           M01 Evidence Stage、M02 Confidence、M03 Seco、M04 CMI、M05 Materiality、M06              B4
-                                事件窗口／AR-CAR、M07 PIT 市值、M08 穩健性檢核                                           
+                                事件窗口／AR-CAR、M07 PIT 市值、M08 穩健性檢核；I03 快取（Seco/CMI 儀表板讀取）；§2.9 模型輸出表        
 
   B6         Agent              A01 抽取、A02 分類、A03 關係／矛盾、A04 Seco/CMI 分析、A05 比較分析、A06 審查、A07       B5
                                 協調、A08 人工介接閘道；G02 自治權控制器、G05 RBAC                                       
@@ -151,6 +160,13 @@ UI → Reporting → Governance → Tests），展開為 CPO AI
 Dashboard（U01）開始施工，也不要一次同時開工超過 1--3
 個高度相關模組（SOP 步驟 11）；I04 技術選型須先於 B7 前定案，見第 5
 節。*
+
+*【V1.2 註，依 `docs/decisions/ADR-0005-batch-allocation.md`】新增 B0.5
+（I06 最小化基礎環境）；I05 pgvector 併入 B1、I03 快取併入 B5、G04
+`model_version` 表於 B1 建置 B4 起寫入；migration 目錄
+`infra/db/migrations/`（`alembic.ini` 於 repo 根）。TQ-03 Kappa 不納入
+V1；TQ-04 γ 迴歸維持 Phase 2。B2 開工前置：先產出
+`docs/audit/DATA_AVAILABILITY_AUDIT.md`（CF-25 各資料集最早可靠日期）。*
 
 **3. WBS 工作包定義（Work Breakdown Structure）**
 
