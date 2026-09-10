@@ -72,7 +72,10 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 
 - 所有欄位命名必須與 `/docs/WORK2_CONTRACT_FREEZE_V1.md` 之 DATA_MODEL／EVENT_CONTRACT 一致，不得另創別名
 - 任一核心實體唯一鍵一律為 `<entity>_id`（如 `company_id`、`event_id`），禁止以 `name`／`code`／`display_name` 作為模組間關聯依據
-- 事件欄位固定為：`event_id / project_id / entity_id / source_id / occurred_at / published_at / retrieved_at / status / version / correlation_id / causation_id / confidence / evidence_ids / cfl_status / created_at`
+- 事件欄位固定為：`event_id / project_id / entity_id / source_id / occurred_at / published_at / retrieved_at / pipeline_status / version / correlation_id / causation_id / confidence / evidence_ids / cfl_status / created_at`
+  - `pipeline_status`（V1.2 由 `status` 更名）＝事件處理管線狀態（Work-2 §3.2）；K05 實體另有 `lifecycle_status`（`ACTIVE/CORRECTED/SUPERSEDED/WITHDRAWN/DISPUTED`，Work-2 §2.6，CF-36）——兩者為不同欄位，不得混用
+  - Bitemporal 有效時間欄位全庫統一 `valid_from / valid_to`（Knowledge Time 用 `created_at`）
+  - 命名慣例詳見 `/docs/decisions/ADR-0002-naming.md`（Seco 六構面、Confidence 五構面一律用具名欄位，不用 `S1..S6` / `CF1..CF5`；Source Tier 值維持 `S1..S5`；Frozen Decision 一律 `CF-01` 連字號）
 
 ## 7. 測試指令與驗收標準
 
@@ -113,4 +116,6 @@ CPO AI 是台灣 CPO／矽光子產業情報、公司事件、生態系卡位與
 ---
 *本檔案為 Work-3 Implementation Blueprint 之隨附文件，任何修改須依 Charter §31 Change Control 流程處理，並同步更新 Work-3 規格書。*
 
-**版本：V1.1（2026-09-10）** — §5／§7 工具鏈與測試指令補充，依 `/docs/decisions/ADR-0001-toolchain.md`；不涉及契約內容變更（CLAUDE.md §11、Charter §7／§31「小幅調整」）。V1.0 → 見 git 歷史。
+**版本沿革**（皆為 Charter §7／§31「小幅且不改變研究契約的調整」，非 Charter §31 CR；V1.0 → 見 git 歷史）
+- **V1.1（2026-09-10）** — §5／§7 工具鏈與測試指令補充，依 `/docs/decisions/ADR-0001-toolchain.md`
+- **V1.2（2026-09-10）** — §6 欄位消歧（`status`→`pipeline_status`＋`lifecycle_status`、`valid_from/valid_to` 統一、命名慣例），依 `/docs/decisions/ADR-0002-naming.md`；Work-2 同步升 V1.1

@@ -12,8 +12,15 @@ Director／Executive User 驗收）
 Upstream: CPO AI Work-1 Technical Specification Baseline
 V1（2026-09-10）；Project Charter Freeze V1.0（2026-09-05, FROZEN）
 
-版本：V1.0　　日期：2026-09-10　　Next Gate: Work-3 --- Implementation
-Blueprint
+版本：V1.1（2026-09-10；V1.0 基線同日，見 git 歷史）　　Next Gate: Work-3
+--- Implementation Blueprint
+
+> **V1.1 變更（依 `docs/decisions/ADR-0002-naming.md`，經 Research
+> Director／Executive User 核可）**：欄位消歧，不改語意、不觸及 Charter
+> 凍結面（Charter §31「小幅且不改變研究契約的調整」）。
+> (1) §2.6 K05 `status` → `lifecycle_status`（enum 值不變，CF-36）。
+> (2) §3.1 通用事件欄位 `status` → `pipeline_status`（狀態機不變，§3.2）。
+> (3) §2.3 K02 `effective_from／effective_to` → `valid_from／valid_to`（統一 §2.1 通用命名）。
 
 **0. 文件控制**
 
@@ -28,7 +35,7 @@ Blueprint
                    Data／Event／API／CFL／Agent 契約；不產出 business
                    code，不做技術選型最終確認
 
-  版本             V1.0（Draft for Contract Freeze）
+  版本             V1.1（欄位消歧補丁；V1.0 基線見 git）
 
   狀態             DRAFT --- 待 Research Director／Executive User
                    驗收後方可進入 Work-3
@@ -157,7 +164,8 @@ NULL，不得虛假精度填補：
   parent_technology_id           上層分類（供樹狀結構）                 Charter
                                                                         §10
 
-  effective_from／effective_to   分類版本有效區間                       GP-10
+  valid_from／valid_to           分類版本有效區間（統一 2.1 通用命名，   GP-10
+                                 V1.1）                                 
   --------------------------------------------------------------------------------
 
 **2.4 K03 產品／模組／規格實體（Product）**
@@ -203,7 +211,7 @@ NULL，不得虛假精度填補：
 
   revision_of_event_id   指向被修正之原事件（Revision Chain，自我參照）                                 CF-35
 
-  status                 ACTIVE／CORRECTED／SUPERSEDED／WITHDRAWN／DISPUTED（撤回不等於歷史未曾存在）   CF-36
+  lifecycle_status       ACTIVE／CORRECTED／SUPERSEDED／WITHDRAWN／DISPUTED（撤回不等於歷史未曾存在；V1.1 由 `status` 更名，enum 不變）   CF-36
 
   event_taxonomy_code    EV01--EV12                                                                     CF-27；M05
 
@@ -253,8 +261,11 @@ Version，不得回填覆寫既有結果（GP-10）。
 **3.1 通用事件欄位（固定，跨模組共用）**
 
 **event_id / project_id / entity_id / source_id / occurred_at /
-published_at / retrieved_at / status / version / correlation_id /
+published_at / retrieved_at / pipeline_status / version / correlation_id /
 causation_id / confidence / evidence_ids / cfl_status / created_at**
+
+> V1.1：`status` → `pipeline_status`（事件處理管線狀態，見 3.2）。K05
+> 實體另有 `lifecycle_status`（見 2.6）；兩者為不同欄位，勿混用。
 
   --------------------------------------------------------------------------------------------
   **欄位**                                  **說明**
@@ -270,7 +281,8 @@ causation_id / confidence / evidence_ids / cfl_status / created_at**
 
   occurred_at／published_at／retrieved_at   Observed-Time 階層（見 2.1）
 
-  status                                    事件狀態，見 3.2
+  pipeline_status                           事件處理管線狀態，見 3.2（V1.1
+                                            由 `status` 更名）
 
   version                                   事件／資料版本號
 
@@ -287,7 +299,7 @@ causation_id / confidence / evidence_ids / cfl_status / created_at**
   created_at                                事件寫入時間
   --------------------------------------------------------------------------------------------
 
-**3.2 事件狀態機（對應 W04 每日研究管線工作流）**
+**3.2 事件狀態機（`pipeline_status`，對應 W04 每日研究管線工作流）**
 
 **DISCOVERED → FETCHED → NORMALIZED → EXTRACTED → VERIFIED → ANALYZED →
 APPROVED → PUBLISHED**

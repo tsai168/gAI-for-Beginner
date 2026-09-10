@@ -17,6 +17,11 @@ Code-1 --- Repository Foundation
 > V1.1 變更：新增 §5.3 語言與工具鏈補充，同步 CLAUDE.md §5／§7；依
 > `docs/decisions/ADR-0001-toolchain.md`。不涉及 Charter 凍結面或 Work-2
 > 契約欄位（Charter §7／§31「小幅調整」）。
+>
+> 另註：`docs/decisions/ADR-0002-naming.md`（欄位消歧）令 Work-2 升
+> V1.1（`status`→`pipeline_status`＋`lifecycle_status`、`valid_from/valid_to`
+> 統一）。本文件 §4 Acceptance Tests 之 TEST-DATA-01／TEST-EVENT-01／02
+> 依「與 DATA_MODEL 一致」原則自動沿用新欄位名，內文不另改。
 
 **0. 文件控制**
 
