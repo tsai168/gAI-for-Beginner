@@ -57,7 +57,7 @@ Code-1 --- Repository Foundation
                    的工程工作包；不產出程式碼、不建立 repository
                    skeleton
 
-  版本             V1.0（Draft for Implementation Blueprint）
+  版本             V1.2（V1.1 §5.3 工具鏈 + V1.2 §2 批次歸屬；V1.0 基線見 git）
 
   狀態             DRAFT --- 待 Research Director／Executive User
                    驗收後方可進入 Claude Code-1
