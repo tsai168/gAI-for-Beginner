@@ -1,5 +1,5 @@
 import sqlalchemy
-from src.models.base import Base
+from src.knowledge.db.base import Base
 
 
 class Source(Base):
