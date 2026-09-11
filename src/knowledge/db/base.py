@@ -14,13 +14,12 @@ Base.metadata.naming_convention = {
 }
 
 
-# 🟢 核心修正 1：利用事件監聽器，強制給所有被初始化的 Table 加上 extend_existing=True 屬性，徹底根除 InvalidRequestError
+# 🟢 縮短中文註解，符合 Ruff 100 字元限制
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正 2：補齊 PipelineStatus 狀態列舉，防止 DISCOVERED 屬性缺失
 class PipelineStatus(StrEnum):
     DISCOVERED = "DISCOVERED"
     RUNNING = "RUNNING"
