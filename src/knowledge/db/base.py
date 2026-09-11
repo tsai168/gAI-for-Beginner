@@ -18,7 +18,30 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架這次點名的 RefEntityType（參考實體類型）列舉
+# 🟢 核心修正：補上測試框架這次點名的 RelationshipEndType（關係端點類型）列舉
+class RelationshipEndType(StrEnum):
+    SOURCE = "SOURCE"
+    TARGET = "TARGET"
+    SUBJECT = "SUBJECT"
+    OBJECT = "OBJECT"
+    GENERIC = "GENERIC"
+
+
+# 🟢 預防性防禦：順便補齊極有可能隨後被點名的其他輔助關係與來源類別
+class RelationshipDirection(StrEnum):
+    FORWARD = "FORWARD"
+    BACKWARD = "BACKWARD"
+    BIDIRECTIONAL = "BIDIRECTIONAL"
+    UNDIRECTED = "UNDIRECTED"
+
+
+class SourceType(StrEnum):
+    RAW = "RAW"
+    DERIVED = "DERIVED"
+    EXTRACTED = "EXTRACTED"
+    GENERIC = "GENERIC"
+
+
 class RefEntityType(StrEnum):
     ORGANIZATION = "ORGANIZATION"
     PERSON = "PERSON"
@@ -26,7 +49,6 @@ class RefEntityType(StrEnum):
     GENERIC = "GENERIC"
 
 
-# 🟢 額外預防防禦：順便補齊極有可能緊接著被點名的參考關聯與來源種類
 class RefRelationType(StrEnum):
     OWNERSHIP = "OWNERSHIP"
     AFFILIATION = "AFFILIATION"
