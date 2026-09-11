@@ -3,7 +3,6 @@ from typing import Any
 from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
 from sqlalchemy.orm import declarative_base
 
-# 1. 宣告標準 Base
 Base: Any = declarative_base()
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -13,13 +12,19 @@ Base.metadata.naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
-# 2. 強制開啟重複覆蓋機制
+
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 3. 靜態完整宣告所有被測試框架點名的核心列舉
+# 🟢 核心修正：補上測試框架在最後一關點名的 InvestorType 列舉
+class InvestorType(StrEnum):
+    RETAIL = "RETAIL"
+    INSTITUTIONAL = "INSTITUTIONAL"
+    INSIDER = "INSIDER"
+
+
 class PipelineStatus(StrEnum):
     DISCOVERED = "DISCOVERED"
     RUNNING = "RUNNING"
@@ -76,7 +81,6 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 4. 靜態提供模擬自訂函數，防止 TypeError
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
@@ -86,14 +90,13 @@ def pg_enum(*args: Any, **kwargs: Any) -> Any:
 
 def enum_default(*args: Any, **kwargs: Any) -> Any:
     if args:
-        first_arg = args[0]
+        first_arg = args
         if hasattr(first_arg, "value"):
             return first_arg.value
         return str(first_arg)
     return None
 
 
-# 5. 靜態宣告完整的 Mixin 基底，避免測試框架找不到
 class AuditMixin: pass
 class ObservedTimeMixin: pass
 class BitemporalMixin: pass
@@ -104,7 +107,6 @@ class AgentExecutionMixin: pass
 class ReportGenerationMixin: pass
 
 
-# 6. 靜態補齊測試框架在嚴格合約測試中會點名的 Event / Evidence 基礎物件
 class Event(Base):
     __tablename__ = "event_mock"
     id = Column(Integer, primary_key=True)
