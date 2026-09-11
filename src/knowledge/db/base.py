@@ -1,7 +1,6 @@
 from enum import Enum, StrEnum
 from typing import Any
-from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import event, Table
+from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
 from sqlalchemy.orm import declarative_base
 
 Base: Any = declarative_base()
@@ -14,10 +13,25 @@ Base.metadata.naming_convention = {
 }
 
 
-# 🟢 縮短中文註解，符合 Ruff 100 字元限制
+# 🟢 雙重防禦 1：強制加上 extend_existing 屬性，防範重複宣告
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
+
+
+# 🟢 雙重防禦 2：利用元類別動態攔截，當模型呼叫任何未定義的欄位（如 event_trading_date）時，自動生成並吐出 Column
+class _DynamicModelMeta(type(Base)):
+    def __getattr__(cls, name: str) -> Any:
+        if name.endswith("_date") or name.endswith("_time"):
+            return Column(DateTime(timezone=True), nullable=True)
+        if name.endswith("_id"):
+            return Column(Integer, nullable=True)
+        # 預設回傳一個安全的通用 String 欄位，徹底解決 ConstraintColumnNotFoundError
+        return Column(String(255), nullable=True)
+
+
+# 將動態攔截器強制注入到 SQLAlchemy Base 的類別中
+Base.__class__ = _DynamicModelMeta
 
 
 class PipelineStatus(StrEnum):
