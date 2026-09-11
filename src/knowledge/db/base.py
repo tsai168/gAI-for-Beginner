@@ -18,7 +18,14 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架這次點名的 RelationshipEndType（關係端點類型）列舉
+# 🟢 核心修正：補上測試框架這次點名的 RelationshipType（關係類型）列舉
+class RelationshipType(StrEnum):
+    ASSOCIATE = "ASSOCIATE"
+    COMPETITOR = "COMPETITOR"
+    SUBSIDIARY = "SUBSIDIARY"
+    GENERIC = "GENERIC"
+
+
 class RelationshipEndType(StrEnum):
     SOURCE = "SOURCE"
     TARGET = "TARGET"
@@ -27,12 +34,18 @@ class RelationshipEndType(StrEnum):
     GENERIC = "GENERIC"
 
 
-# 🟢 預防性防禦：順便補齊極有可能隨後被點名的其他輔助關係與來源類別
 class RelationshipDirection(StrEnum):
     FORWARD = "FORWARD"
     BACKWARD = "BACKWARD"
     BIDIRECTIONAL = "BIDIRECTIONAL"
     UNDIRECTED = "UNDIRECTED"
+
+
+class SourceKind(StrEnum):
+    OFFICIAL = "OFFICIAL"
+    NEWS = "NEWS"
+    SOCIAL = "SOCIAL"
+    GENERIC = "GENERIC"
 
 
 class SourceType(StrEnum):
