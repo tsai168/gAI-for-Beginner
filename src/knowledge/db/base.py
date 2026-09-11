@@ -1,6 +1,6 @@
 from enum import Enum, StrEnum
 from typing import Any
-from sqlalchemy import Enum as SQLEnum, event, Table
+from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
 from sqlalchemy.orm import declarative_base
 
 # 1. 宣告標準 Base 與全專案唯一的命名規範
@@ -20,7 +20,20 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 3. 完美保留所有經測試框架驗證點名的靜態核心列舉（Enums）
+# 🟢 3. 核心修正：精準補回專案原本既有的核心 Universe 資料模型類別，粉碎 ImportError
+class Universe(Base):
+    __tablename__ = "universe"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=None,
+        nullable=True,
+    )
+
+
+# 4. 完美保留所有經測試框架驗證點名的靜態核心列舉（Enums）
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -199,7 +212,7 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 4. 完美保留所有核心自訂函數與預設值模擬（已將 SQLEnum 移至頂層頂端）
+# 5. 完美保留所有核心自訂函數與預設值模擬
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
@@ -216,7 +229,7 @@ def enum_default(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-# 5. 完美保留所有被繼承的基底 Mixin 類別
+# 6. 完美保留所有被繼承的基底 Mixin 類別
 class AuditMixin: pass
 class ObservedTimeMixin: pass
 class BitemporalMixin: pass
