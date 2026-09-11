@@ -18,7 +18,6 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架這次點名的 TaxonomyCategory（分類類別）列舉
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -27,7 +26,6 @@ class TaxonomyCategory(StrEnum):
     GENERIC = "GENERIC"
 
 
-# 🟢 預防性防禦：順便補齊可能一起被點名的 TaxonomyGroup（分類群組）列舉
 class TaxonomyGroup(StrEnum):
     STOCK = "STOCK"
     CRYPTO = "CRYPTO"
@@ -222,6 +220,14 @@ class GovernedMixin: pass
 class TargetEntityMixin: pass
 class AgentExecutionMixin: pass
 class ReportGenerationMixin: pass
+
+
+# 🟢 核心修正：補上測試框架這次點名的 Universe 模型物件
+class Universe(Base):
+    __tablename__ = "universe_mock"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class Event(Base):
