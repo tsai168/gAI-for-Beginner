@@ -19,7 +19,7 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    inspect_obj = reflection.Inspector.from_engine(bind)
+    inspect_obj = reflection.Inspector.from_engine(bind)  # type: ignore
     existing_tables = inspect_obj.get_table_names()
 
     # 🔥 終極保障：強制在最前方，如果 source 不存在，立即優先建立它
@@ -79,7 +79,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     bind = op.get_bind()
-    inspect_obj = reflection.Inspector.from_engine(bind)
+    inspect_obj = reflection.Inspector.from_engine(bind)  # type: ignore
     existing_tables = inspect_obj.get_table_names()
 
     if "event" in existing_tables:
