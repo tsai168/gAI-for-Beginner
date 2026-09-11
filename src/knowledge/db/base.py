@@ -18,12 +18,11 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 萬能模擬 Column，直接継承真正的 SQLAlchemy Column，保證 100% 支援所有運算子（如 contains / getitem）
+# 🟢 縮短註解至 100 字元內，避免觸發 Ruff E501
 class _UniversalMockColumn(Column):
     def __init__(self) -> None:
         super().__init__(String(255), nullable=True)
 
-    # 🟢 核心修正 1：動態相容所有中括號與屬性讀取（如 columns['source']），徹底解決 KeyError
     def __getitem__(self, key: Any) -> Any:
         return self
 
@@ -33,7 +32,6 @@ class _UniversalMockColumn(Column):
         return self
 
 
-# 萬能容器，用來模擬 columns、relationships 與 c 等內部結構
 class _UniversalMockRegistry:
     def __init__(self) -> None:
         self._col = _UniversalMockColumn()
@@ -51,7 +49,6 @@ class _UniversalMockRegistry:
 _mock_obj = _UniversalMockRegistry()
 
 
-# 🟢 核心修正 2：在 Model 層級全面攔截，不管是找特殊內部欄位還是找 source_id，都一律回傳全相容物件
 class _DynamicModelMeta(type):
     def __getattr__(cls, name: str) -> Any:
         if name in ("columns", "relationships", "c", "__table__", "_sa_class_manager"):
