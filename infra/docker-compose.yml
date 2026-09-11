@@ -1,0 +1,50 @@
+# B0.5 最小化開發環境：PostgreSQL 16 + pgvector，及 Temporal dev。
+# 僅供本機開發／CI，非部署拓撲（部署待 Operations 階段）。
+name: cpo-ai-dev
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: cpoai
+      POSTGRES_PASSWORD: cpoai
+      POSTGRES_DB: cpoai
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cpoai -d cpoai"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: cpoai
+      POSTGRES_PWD: cpoai
+      POSTGRES_SEEDS: db
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+    ports:
+      - "7233:7233"
+
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:8233
+    ports:
+      - "8233:8080"
+
+volumes:
+  db-data:

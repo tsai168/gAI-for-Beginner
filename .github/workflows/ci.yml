@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint + type + unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Unit tests
+        run: uv run pytest -m "not integration and not migration"
+
+  migration:
+    name: alembic round-trip
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: cpoai
+          POSTGRES_PASSWORD: cpoai
+          POSTGRES_DB: cpoai
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U cpoai -d cpoai"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://cpoai:cpoai@localhost:5432/cpoai
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      # No revisions until WBS-B1; this proves the Alembic wiring + DB reachability.
+      # B1's first migration adds `CREATE EXTENSION vector`.
+      - name: Migration round-trip
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
