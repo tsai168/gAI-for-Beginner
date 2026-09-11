@@ -18,12 +18,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 🟢 檢查現有的資料表
     bind = op.get_bind()
     inspect_obj = reflection.Inspector.from_engine(bind)
     existing_tables = inspect_obj.get_table_names()
 
-    # 🟢 1. 安全建立主表 source
+    # 🔥 終極保障：強制在最前方，如果 source 不存在，立即優先建立它
     if "source" not in existing_tables:
         op.create_table(
             "source",
@@ -37,7 +36,7 @@ def upgrade() -> None:
             ),
         )
 
-    # 🟢 2. 安全建立 evidence 表
+    # 2. 安全建立 evidence 表
     if "evidence" not in existing_tables:
         op.create_table(
             "evidence",
@@ -57,7 +56,7 @@ def upgrade() -> None:
             ),
         )
 
-    # 🟢 3. 安全建立 event 表（防範有些測試流程是用 event 當表名）
+    # 3. 安全建立 event 表
     if "event" not in existing_tables:
         op.create_table(
             "event",

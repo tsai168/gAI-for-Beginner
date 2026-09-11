@@ -1,5 +1,3 @@
-import datetime
-
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.orm import relationship
 
@@ -17,7 +15,6 @@ class Source(Base):
         nullable=True,
     )
 
-    # 建立關聯
     evidences = relationship("Evidence", back_populates="source", cascade="all, delete-orphan")
     events = relationship("Event", back_populates="source", cascade="all, delete-orphan")
 
@@ -34,7 +31,6 @@ class Evidence(Base):
         nullable=True,
     )
 
-    # 建立關聯
     source = relationship("Source", back_populates="evidences")
 
 
@@ -50,5 +46,5 @@ class Event(Base):
         nullable=True,
     )
 
-    # 建立關聯
     source = relationship("Source", back_populates="events")
+
