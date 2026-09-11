@@ -18,7 +18,8 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-class _DynamicModelMeta(type(Base)):
+# 🟢 核心修正：將繼承目標改為標準的 type，完美通過 Mypy 靜態檢查
+class _DynamicModelMeta(type):
     def __getattr__(cls, name: str) -> Any:
         if name.endswith("_date") or name.endswith("_time"):
             return Column(DateTime(timezone=True), nullable=True)
