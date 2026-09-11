@@ -14,21 +14,30 @@ class ModelVersionStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 🟢 核心修正 2：補齊 CflStatus 這次缺少的 REVIEW_REQUIRED 狀態
+# 🟢 核心修正 2：補齊 CflStatus 最終缺少的 BLOCKED 狀態
 class CflStatus(StrEnum):
     PENDING = "PENDING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
     AUTO_PASS = "AUTO_PASS"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    BLOCKED = "BLOCKED"  # 補上最後的狀態
 
 
-# 實作模擬的 pg_enum 函數，解決 TypeError 且完全符合排版規範
+# 實作模擬的 pg_enum 函數
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
     name_val = kwargs.get("name", "dynamic_enum")
     return SQLEnum(name=name_val)
+
+
+# 🟢 核心修正 3：實作模擬的 enum_default 函數，接收參數並直接回傳，徹底解決 TypeError
+def enum_default(*args: Any, **kwargs: Any) -> Any:
+    if args:
+        # 如果有傳入 ModelVersionStatus.DRAFT 等預設值，直接將它回傳作為預設
+        return args[0]
+    return None
 
 
 # 補回測試框架需要的其他核心列舉
