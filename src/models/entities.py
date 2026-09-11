@@ -1,3 +1,5 @@
+# Trigger CI update
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.orm import relationship
 
