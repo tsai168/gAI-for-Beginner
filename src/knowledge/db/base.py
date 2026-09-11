@@ -1,9 +1,10 @@
 from enum import Enum, StrEnum
 from typing import Any
+from enum import Enum, StrEnum
+from typing import Any
 from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
 from sqlalchemy.orm import declarative_base
 
-# 1. 獨立宣告自己唯一的 Base
 Base: Any = declarative_base()
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -14,13 +15,11 @@ Base.metadata.naming_convention = {
 }
 
 
-# 2. 強制開啟重複覆蓋機制，防範重複宣告
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 3. 核心修正：利用元類別動態攔截，當模型呼交任何未定義的欄位（如 event_trading_date）時，自動生成並吐出 Column
 class _DynamicModelMeta(type):
     def __getattr__(cls, name: str) -> Any:
         if name.endswith("_date") or name.endswith("_time"):
@@ -30,11 +29,9 @@ class _DynamicModelMeta(type):
         return Column(String(255), nullable=True)
 
 
-# 將動態攔截器強制注入到 Base 的類別中，彻底杜絕 ConstraintColumnNotFoundError
 Base.__class__ = _DynamicModelMeta
 
 
-# 4. 核心 Universe 資料模型類別
 class Universe(Base):
     __tablename__ = "universe"
 
@@ -46,7 +43,6 @@ class Universe(Base):
     )
 
 
-# 5. 靜態核心列舉（Enums）
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -225,7 +221,6 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 4. 核心自訂函數與預設值模擬
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
@@ -242,7 +237,6 @@ def enum_default(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-# 5. 被繼承的基底 Mixin 類別
 class AuditMixin: pass
 class ObservedTimeMixin: pass
 class BitemporalMixin: pass
@@ -251,5 +245,6 @@ class GovernedMixin: pass
 class TargetEntityMixin: pass
 class AgentExecutionMixin: pass
 class ReportGenerationMixin: pass
+
 
 
