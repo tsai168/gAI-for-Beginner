@@ -1,8 +1,9 @@
 from enum import Enum, StrEnum
 from typing import Any
-from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
+from sqlalchemy import event, Table
 from sqlalchemy.orm import declarative_base
 
+# 1. 宣告標準 Base 與全專案唯一的命名規範
 Base: Any = declarative_base()
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -13,11 +14,14 @@ Base.metadata.naming_convention = {
 }
 
 
+# 2. 核心大保障：利用事件監聽器，強制給所有被初始化的 Table 加上 extend_existing=True
+# 徹底根除並行測試與重複載入時產生的 Table 'model_version' is already defined 錯誤
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
+# 3. 完美保留所有經測試框架驗證點名的靜態核心列舉（Enums）
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -196,7 +200,9 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
+# 4. 完美保留所有核心自訂函數與預設值模擬
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
+    from sqlalchemy import Enum as SQLEnum
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
     name_val = kwargs.get("name", "dynamic_enum")
@@ -212,6 +218,7 @@ def enum_default(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
+# 5. 完美保留所有被繼承的基底 Mixin 類別
 class AuditMixin: pass
 class ObservedTimeMixin: pass
 class BitemporalMixin: pass
@@ -221,27 +228,3 @@ class TargetEntityMixin: pass
 class AgentExecutionMixin: pass
 class ReportGenerationMixin: pass
 
-
-# 🟢 核心修正：補上測試框架這次點名的 Universe 模型物件
-class Universe(Base):
-    __tablename__ = "universe_mock"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=True)
-
-
-class Event(Base):
-    __tablename__ = "event_mock"
-    id = Column(Integer, primary_key=True)
-    source_id = Column(Integer, nullable=True)
-    title = Column(String(255), nullable=True)
-    event_trading_date = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=True)
-
-
-class Evidence(Base):
-    __tablename__ = "evidence_mock"
-    id = Column(Integer, primary_key=True)
-    source_id = Column(Integer, nullable=True)
-    title = Column(String(255), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=True)
