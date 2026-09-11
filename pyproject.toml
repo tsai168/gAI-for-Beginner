@@ -58,6 +58,9 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "PL"]
 
+[tool.ruff.lint.pylint]
+max-args = 10  # keyword-only ingestion/model helpers legitimately take many
+
 [tool.mypy]
 python_version = "3.12"
 mypy_path = "src"

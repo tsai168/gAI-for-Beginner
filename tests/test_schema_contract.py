@@ -186,6 +186,43 @@ CONTRACT_COLUMNS: dict[str, set[str]] = {
         "created_at",
         "created_by",
     },
+    # --- WBS-B2 (ADR-0008) ---
+    "data_source": {
+        "source_code",
+        "name",
+        "source_tier",
+        "is_enabled",
+        "earliest_reliable_date",
+        "auth_method",
+        "license_note",
+        "created_at",
+    },
+    "source": {
+        "source_id",
+        "data_source_code",
+        "url",
+        "title",
+        "publisher",
+        "source_ref",
+        "published_at",
+        "retrieved_at",
+        "parser_version",
+        "source_version",
+        "created_at",
+        "updated_at",
+    },
+    "source_snapshot": {
+        "source_snapshot_id",
+        "source_id",
+        "content_hash",
+        "snapshot_ref",
+        "content_type",
+        "byte_size",
+        "parser_version",
+        "source_version",
+        "retrieved_at",
+        "created_at",
+    },
 }
 
 EXPECTED_TABLES = set(CONTRACT_COLUMNS) | {"company_taxonomy"}

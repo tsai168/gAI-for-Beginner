@@ -232,7 +232,9 @@ class Event(ObservedTimeMixin, BitemporalMixin, GovernedMixin, AuditMixin, Base)
         nullable=False, server_default=text(f"'{_PROJECT_ID_DEFAULT}'")
     )
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    source_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    source_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.source_id", ondelete="SET NULL", use_alter=True), nullable=True
+    )
     revision_of_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("event.event_id", ondelete="RESTRICT"), nullable=True
     )
@@ -275,7 +277,9 @@ class Evidence(ObservedTimeMixin, CflStatusMixin, AuditMixin, Base):
     __tablename__ = "evidence"
 
     evidence_id: Mapped[uuid.UUID] = _uuid_pk("evidence_id")
-    source_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    source_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.source_id", ondelete="SET NULL", use_alter=True), nullable=True
+    )
     entity_ref: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     entity_ref_type: Mapped[str | None] = mapped_column(
         pg_enum(RefEntityType, "ref_entity_type_evd"), nullable=True
@@ -382,4 +386,84 @@ class Shareholding(AuditMixin, Base):
     )
 
 
+# =====================================================================
+# WBS-B2 — Source Registry (D01–D08 catalogue) + P03 snapshot/version
+# ADR-0008. `source` is referenced by event.source_id / evidence.source_id
+# (cross-module FKs added in migration 0002, use_alter).
+# =====================================================================
+
+
+class DataSource(Base):
+    """D01–D08 fixed catalogue (seeded in migration 0002). PK = the code."""
+
+    __tablename__ = "data_source"
+
+    source_code: Mapped[str] = mapped_column(primary_key=True)  # "D01".."D08"
+    name: Mapped[str] = mapped_column(nullable=False)
+    source_tier: Mapped[str | None] = mapped_column(
+        pg_enum(SourceTier, "data_source_tier"), nullable=True
+    )
+    is_enabled: Mapped[bool] = mapped_column(nullable=False, server_default=text("true"))
+    earliest_reliable_date: Mapped[date | None] = mapped_column(Date, nullable=True)  # CF-25
+    auth_method: Mapped[str | None] = mapped_column(nullable=True)
+    license_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(_TS, nullable=False, server_default=text("now()"))
+
+
+class Source(AuditMixin, Base):
+    """One retrieved source instance (a URL / document / dataset row batch)."""
+
+    __tablename__ = "source"
+
+    source_id: Mapped[uuid.UUID] = _uuid_pk("source_id")
+    data_source_code: Mapped[str] = mapped_column(
+        ForeignKey("data_source.source_code", ondelete="RESTRICT"), nullable=False
+    )
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    publisher: Mapped[str | None] = mapped_column(nullable=True)
+    source_ref: Mapped[str | None] = mapped_column(nullable=True)  # external accession id
+    published_at: Mapped[datetime | None] = mapped_column(_TS, nullable=True)
+    retrieved_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    parser_version: Mapped[str | None] = mapped_column(nullable=True)  # P03
+    source_version: Mapped[str | None] = mapped_column(nullable=True)  # P03
+
+    __table_args__ = (
+        Index("ix_source_data_source_code", "data_source_code"),
+        Index("ix_source_url", "url"),
+    )
+
+
+class SourceSnapshot(Base):
+    """P03 — immutable content capture (CF-08 / GP-15). Append-only: a DB
+    trigger (migration 0002) rejects UPDATE and DELETE."""
+
+    __tablename__ = "source_snapshot"
+
+    source_snapshot_id: Mapped[uuid.UUID] = _uuid_pk("source_snapshot_id")
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("source.source_id", ondelete="RESTRICT"), nullable=False
+    )
+    content_hash: Mapped[str] = mapped_column(nullable=False)  # sha256 hex
+    snapshot_ref: Mapped[str | None] = mapped_column(Text, nullable=True)  # I02 object key
+    content_type: Mapped[str | None] = mapped_column(nullable=True)
+    byte_size: Mapped[int | None] = mapped_column(_QTY, nullable=True)
+    parser_version: Mapped[str | None] = mapped_column(nullable=True)
+    source_version: Mapped[str | None] = mapped_column(nullable=True)
+    retrieved_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(_TS, nullable=False, server_default=text("now()"))
+
+    __table_args__ = (
+        UniqueConstraint("source_id", "content_hash", name="source_content_hash"),
+        Index("ix_source_snapshot_content_hash", "content_hash"),
+    )
+
+
 CFL_GOVERNED_TABLES: tuple[str, ...] = ("company", "relationship", "event", "evidence")
+APPEND_ONLY_TABLES: tuple[str, ...] = ("source_snapshot",)
+
+# Cross-module FKs created in migration 0002 (both ends already exist by then).
+DEFERRED_FKS: tuple[tuple[str, str, str, str], ...] = (
+    ("event", "source_id", "source", "source_id"),
+    ("evidence", "source_id", "source", "source_id"),
+)

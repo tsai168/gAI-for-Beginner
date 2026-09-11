@@ -25,6 +25,22 @@ depends_on: str | Sequence[str] | None = None
 
 _CFL_GUARD_TABLES = ("company", "relationship", "event", "evidence")
 
+# Explicit B1 table set (scoped per batch; B2+ migrations create their own).
+_B1_TABLES = (
+    "model_version",
+    "company",
+    "technology",
+    "company_taxonomy",
+    "product",
+    "relationship",
+    "person",
+    "event",
+    "evidence",
+    "market_data",
+    "institutional_trading",
+    "shareholding",
+)
+
 _GUARD_FN = """
 CREATE OR REPLACE FUNCTION cpoai_cfl_guard() RETURNS trigger AS $$
 BEGIN
@@ -43,7 +59,7 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    Base.metadata.create_all(bind=bind)
+    Base.metadata.create_all(bind=bind, tables=[Base.metadata.tables[t] for t in _B1_TABLES])
 
     op.execute(_GUARD_FN)
     for tbl in _CFL_GUARD_TABLES:
@@ -59,7 +75,9 @@ def downgrade() -> None:
         op.execute(f"DROP TRIGGER IF EXISTS {tbl}_cfl_guard ON {tbl}")
     op.execute("DROP FUNCTION IF EXISTS cpoai_cfl_guard()")
 
-    Base.metadata.drop_all(bind=bind)
+    Base.metadata.drop_all(
+        bind=bind, tables=[Base.metadata.tables[t] for t in reversed(_B1_TABLES)]
+    )
 
     op.execute("DROP EXTENSION IF EXISTS vector")
     op.execute("DROP EXTENSION IF EXISTS pgcrypto")
