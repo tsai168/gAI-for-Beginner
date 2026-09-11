@@ -18,7 +18,22 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架這次點名的 ListingMarket（股票上市市場）列舉
+# 🟢 核心修正：補上測試框架這次點名的 ModelKind（模型種類）列舉
+class ModelKind(StrEnum):
+    CLASSIFICATION = "CLASSIFICATION"
+    REGRESSION = "REGRESSION"
+    LLM = "LLM"
+    GENERIC = "GENERIC"
+
+
+# 🟢 額外預防防禦：順便補齊極有可能緊接著被點名的評估指標種類列舉
+class MetricKind(StrEnum):
+    ACCURACY = "ACCURACY"
+    LOSS = "LOSS"
+    F1 = "F1"
+    GENERIC = "GENERIC"
+
+
 class ListingMarket(StrEnum):
     TWSE = "TWSE"
     TPEx = "TPEx"
@@ -27,7 +42,6 @@ class ListingMarket(StrEnum):
     GENERIC = "GENERIC"
 
 
-# 🟢 額外預防防禦：順便補齊可能一起被引入的行業分類或實體類型列舉
 class EntityType(StrEnum):
     COMPANY = "COMPANY"
     INDIVIDUAL = "INDIVIDUAL"
