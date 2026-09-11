@@ -27,7 +27,7 @@ jobs:
       - name: Type check
         run: uv run mypy .
       - name: Unit tests
-        run: uv run pytest -m "not integration and not migration"
+        run: PYTHONPATH=. uv run pytest -m "not integration and not migration"
 
   migration:
     name: alembic round-trip
