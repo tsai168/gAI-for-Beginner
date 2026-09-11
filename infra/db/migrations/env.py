@@ -1,8 +1,7 @@
 """Alembic migration environment.
 
-B0.5 scaffold: no models/metadata yet (K01–K06 + §2.9 land in WBS-B1).
-`target_metadata` stays None until B1 wires the ORM base.
-The DB URL is read from the DATABASE_URL environment variable only.
+The DB URL is read from the DATABASE_URL environment variable only
+(CLAUDE.md §9). `target_metadata` is the ORM Base metadata (WBS-B1).
 """
 
 from __future__ import annotations
@@ -13,6 +12,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from knowledge.db import Base
+from knowledge.db import models as _models  # noqa: F401  (register all tables)
+
 config = context.config
 
 if config.config_file_name is not None:
@@ -22,9 +24,7 @@ _db_url = os.environ.get("DATABASE_URL")
 if _db_url:
     config.set_main_option("sqlalchemy.url", _db_url)
 
-# WBS-B1: set to the ORM metadata (e.g. `from knowledge.db import Base` ->
-# Base.metadata) to enable autogenerate.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -72,13 +72,15 @@ K05 新增 `revision_seq`（整數，同一 `event_id` 修正鏈內遞增，起�
 
 ---
 
-## 待確認（不由本 ADR 決定，B1／B5 開工時定）
+## 待確認
 
-1. **所有欄位之 SQL 型別、nullability、精度**（例：金額 `numeric(precision,scale)`、時間 `timestamptz`、主鍵 UUID vs bigint）——依原始需求「規格未寫明者不自行決定」，留待 Claude Code-1 於 WBS-B1 提 migration 時逐欄定，並回填本 ADR。
-2. enum 之實作方式（native enum / check constraint / lookup 表）——B1 統一決定。
-3. `market_data` / `institutional_trading` / `shareholding` 之**資料集 earliest reliable date**（CF-25，Charter §29 Deferred）——B2 前需 Data Availability Audit。
-4. `research_report.content_ref` 指向物件儲存（I02）或 DB 大欄位——B11 前定。
-5. K04 多型參照之實作（單欄 + type 欄 vs 兩組 FK）——B4 定。
+| # | 項目 | 狀態 |
+|---|---|---|
+| 1 | 所有欄位之 SQL 型別／nullability／精度、PK 型別 | **RESOLVED** — `ADR-0007` §2（uuid PK `gen_random_uuid()`、`timestamptz`、numeric 精度表） |
+| 2 | enum 實作方式 | **RESOLVED** — `ADR-0007` §2：非原生 `varchar + CHECK` |
+| 3 | 各資料集 earliest reliable date（CF-25） | OPEN — B2 前置 `docs/audit/DATA_AVAILABILITY_AUDIT.md`（ADR-0005 G4-4） |
+| 4 | `research_report.content_ref` 儲存位置 | OPEN — B11 前定 |
+| 5 | K04 多型參照實作 | **RESOLVED** — `ADR-0007` §5：單欄 + `*_entity_type`（`{company, person}` CHECK） |
 
 ## 後續
 
