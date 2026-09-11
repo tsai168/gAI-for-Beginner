@@ -81,3 +81,6 @@ markers = [
     "migration: exercises Alembic migrations against a live DB",
 ]
 addopts = "-ra"
+[tool.mypy]
+explicit_package_bases = true
+mypy_path = "."
