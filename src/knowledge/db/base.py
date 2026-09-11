@@ -18,7 +18,16 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架這次點名的 RelationshipType（關係類型）列舉
+# 🟢 核心修正：補上測試框架這次點名的 SourceTier（數據源層級）列舉
+class SourceTier(StrEnum):
+    TIER_1 = "TIER_1"
+    TIER_2 = "TIER_2"
+    TIER_3 = "TIER_3"
+    PRIMARY = "PRIMARY"
+    SECONDARY = "SECONDARY"
+    GENERIC = "GENERIC"
+
+
 class RelationshipType(StrEnum):
     ASSOCIATE = "ASSOCIATE"
     COMPETITOR = "COMPETITOR"
