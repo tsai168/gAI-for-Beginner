@@ -1,7 +1,8 @@
 import os
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool, text
+
 from alembic import context
+from sqlalchemy import engine_from_config, pool, text
 
 # 讀取 Alembic 設定
 config = context.config
