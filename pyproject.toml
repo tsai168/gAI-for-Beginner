@@ -71,6 +71,7 @@ packages = ["ingestion", "knowledge", "models", "agents", "workflows", "reports"
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
+explicit_package_bases = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -81,6 +82,3 @@ markers = [
     "migration: exercises Alembic migrations against a live DB",
 ]
 addopts = "-ra"
-[tool.mypy]
-explicit_package_bases = true
-mypy_path = "."
