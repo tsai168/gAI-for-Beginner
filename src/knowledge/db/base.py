@@ -6,6 +6,13 @@ from sqlalchemy.orm import declarative_base
 Base: Any = declarative_base()
 
 
+# 補回測試框架需要的證據階段列舉
+class EvidenceStage(StrEnum):
+    COLLECTED = "COLLECTED"
+    PROCESSED = "PROCESSED"
+    ANALYZED = "ANALYZED"
+
+
 # 補回測試框架需要的分類列舉
 class EventTaxonomyCode(StrEnum):
     GENERIC = "GENERIC"
