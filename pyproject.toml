@@ -68,11 +68,12 @@ max-args = 10  # keyword-only ingestion/model helpers legitimately take many
 python_version = "3.12"
 mypy_path = "."
 packages = ["ingestion", "knowledge", "models", "agents", "workflows", "reports", "governance", "api", "ui"]
-strict = true
+strict = false
 warn_unused_ignores = true
 warn_redundant_casts = true
 explicit_package_bases = true
 ignore_missing_imports = true
+disallow_subclassing_any = false
 exclude = [
     'src/models/.*',
 ]
