@@ -2,7 +2,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool, text
+from sqlalchemy import engine_from_config, pool
 
 config = context.config
 if config.config_file_name is not None:
@@ -19,11 +19,6 @@ def run_migrations_online() -> None:
         url=db_url,
     )
     with connectable.connect() as connection:
-        # 🟢 同時強制清理 event、evidence 和 source，徹底粉碎外鍵殘留衝突
-        connection.execute(text("DROP TABLE IF EXISTS event CASCADE;"))
-        connection.execute(text("DROP TABLE IF EXISTS evidence CASCADE;"))
-        connection.execute(text("DROP TABLE IF EXISTS source CASCADE;"))
-        connection.commit()
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -36,3 +31,4 @@ if context.is_offline_mode():
     pass
 else:
     run_migrations_online()
+
