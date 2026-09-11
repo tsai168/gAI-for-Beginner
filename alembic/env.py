@@ -25,16 +25,16 @@ def run_migrations_online() -> None:
         url=db_url
     )
 
-    with connectable.connect() as connection:
+        with connectable.connect() as connection:
         connection.execute(text("DROP TABLE IF EXISTS event CASCADE;"))
         connection.execute(text("DROP TABLE IF EXISTS source CASCADE;"))
         connection.commit()
 
-        # 這裡縮成單行，並且逗號後面補上一個空格，完全符合 Ruff/Lint 規範
-                context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(connection=connection, target_metadata=target_metadata)
 
-                with context.begin_transaction():
-                    context.run_migrations()
+        with context.begin_transaction():
+            context.run_migrations()
+S
 
 if context.is_offline_mode():
     # 測試環境通常只跑 online 模式
