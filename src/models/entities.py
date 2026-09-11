@@ -23,6 +23,7 @@ class Evidence(Base):
     __tablename__ = "evidence"
 
     id = Column(Integer, primary_key=True)
+    # 🟢 核心修正：將 ForeignKey 指向正確的主鍵欄位 "source.id"
     source_id = Column(Integer, ForeignKey("source.id", ondelete="SET NULL"), nullable=True)
     title = Column(String(255), nullable=False)
     created_at = Column(
@@ -38,6 +39,7 @@ class Event(Base):
     __tablename__ = "event"
 
     id = Column(Integer, primary_key=True)
+    # 🟢 核心修正：將 ForeignKey 指向正確的主鍵欄位 "source.id"
     source_id = Column(Integer, ForeignKey("source.id", ondelete="SET NULL"), nullable=True)
     title = Column(String(255), nullable=False)
     created_at = Column(
