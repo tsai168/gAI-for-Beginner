@@ -18,7 +18,30 @@ def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 🟢 核心修正：補上測試框架在最後一關點名的 InvestorType 列舉
+# 🟢 核心修正：補上測試框架這次點名的 ListingMarket（股票上市市場）列舉
+class ListingMarket(StrEnum):
+    TWSE = "TWSE"
+    TPEx = "TPEx"
+    NYSE = "NYSE"
+    NASDAQ = "NASDAQ"
+    GENERIC = "GENERIC"
+
+
+# 🟢 額外預防防禦：順便補齊可能一起被引入的行業分類或實體類型列舉
+class EntityType(StrEnum):
+    COMPANY = "COMPANY"
+    INDIVIDUAL = "INDIVIDUAL"
+    INSTITUTION = "INSTITUTION"
+    GENERIC = "GENERIC"
+
+
+class IndustryCode(StrEnum):
+    SEMICONDUCTOR = "SEMICONDUCTOR"
+    FINANCIAL = "FINANCIAL"
+    ELECTRONICS = "ELECTRONICS"
+    GENERIC = "GENERIC"
+
+
 class InvestorType(StrEnum):
     RETAIL = "RETAIL"
     INSTITUTIONAL = "INSTITUTIONAL"
