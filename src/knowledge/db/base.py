@@ -1,10 +1,10 @@
 from enum import Enum, StrEnum
 from typing import Any
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import event, Table
 from sqlalchemy.orm import declarative_base
 
 Base: Any = declarative_base()
-# 🟢 核心修正 1：精準修正 SQLAlchemy 命名規則，將 referenced 改為正確的 referred
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -13,7 +13,19 @@ Base.metadata.naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
-Base.__table_args__ = {"extend_existing": True}
+
+# 🟢 核心修正 1：利用事件監聽器，強制給所有被初始化的 Table 加上 extend_existing=True 屬性，徹底根除 InvalidRequestError
+@event.listens_for(Table, "before_configured")
+def _set_extend_existing(target: Any) -> None:
+    target.append_init_kwarg("extend_existing", True)
+
+
+# 🟢 核心修正 2：補齊 PipelineStatus 狀態列舉，防止 DISCOVERED 屬性缺失
+class PipelineStatus(StrEnum):
+    DISCOVERED = "DISCOVERED"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
 
 
 class RelationshipStatus(StrEnum):
@@ -31,7 +43,7 @@ class CflStatus(StrEnum):
     BLOCKED = "BLOCKED"
     APPROVED = "APPROVED"
     SUPERSEDED = "SUPERSEDED"
-    REJECTED = "REJECTED"  # 🟢 核心修正 2：補上最後的 REJECTED 狀態
+    REJECTED = "REJECTED"
 
 
 class ModelVersionStatus(StrEnum):
@@ -49,7 +61,7 @@ def pg_enum(*args: Any, **kwargs: Any) -> Any:
 
 def enum_default(*args: Any, **kwargs: Any) -> Any:
     if args:
-        first_arg = args[0]
+        first_arg = args
         if hasattr(first_arg, "value"):
             return first_arg.value
         return str(first_arg)
