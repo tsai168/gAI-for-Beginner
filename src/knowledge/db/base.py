@@ -1,6 +1,6 @@
 from enum import Enum, StrEnum
 from typing import Any
-from sqlalchemy import event, Table
+from sqlalchemy import Enum as SQLEnum, event, Table
 from sqlalchemy.orm import declarative_base
 
 # 1. 宣告標準 Base 與全專案唯一的命名規範
@@ -15,7 +15,6 @@ Base.metadata.naming_convention = {
 
 
 # 2. 核心大保障：利用事件監聽器，強制給所有被初始化的 Table 加上 extend_existing=True
-# 徹底根除並行測試與重複載入時產生的 Table 'model_version' is already defined 錯誤
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
@@ -200,9 +199,8 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 4. 完美保留所有核心自訂函數與預設值模擬
+# 4. 完美保留所有核心自訂函數與預設值模擬（已將 SQLEnum 移至頂層頂端）
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
-    from sqlalchemy import Enum as SQLEnum
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
     name_val = kwargs.get("name", "dynamic_enum")
