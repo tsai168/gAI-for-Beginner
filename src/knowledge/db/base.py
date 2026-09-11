@@ -7,18 +7,26 @@ from sqlalchemy.orm import declarative_base
 Base: Any = declarative_base()
 
 
-# 補齊單元測試所需要的所有 CflStatus 狀態屬性
+# 🟢 核心修正 1：補齊 ModelVersionStatus 狀態列舉
+class ModelVersionStatus(StrEnum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"
+
+
+# 🟢 核心修正 2：補齊 CflStatus 這次缺少的 REVIEW_REQUIRED 狀態
 class CflStatus(StrEnum):
     PENDING = "PENDING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
     AUTO_PASS = "AUTO_PASS"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
 
 
 # 實作模擬的 pg_enum 函數，解決 TypeError 且完全符合排版規範
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
-    if args and isinstance(args[0], type) and issubclass(args[0], Enum):
-        return SQLEnum(args[0])
+    if args and isinstance(args, type) and issubclass(args, Enum):
+        return SQLEnum(args)
     name_val = kwargs.get("name", "dynamic_enum")
     return SQLEnum(name=name_val)
 
