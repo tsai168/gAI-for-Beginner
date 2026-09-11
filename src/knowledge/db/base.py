@@ -3,7 +3,6 @@ from typing import Any
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import declarative_base
 
-# 🟢 縮短中文註解，符合 Ruff 100 字元長度限制
 Base: Any = declarative_base()
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -13,7 +12,6 @@ Base.metadata.naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
-# 強制給所有模型加上 extend_existing 屬性
 Base.__table_args__ = {"extend_existing": True}
 
 
@@ -31,6 +29,7 @@ class CflStatus(StrEnum):
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
     BLOCKED = "BLOCKED"
     APPROVED = "APPROVED"
+    SUPERSEDED = "SUPERSEDED"  # 🟢 補上最後的狀態
 
 
 class ModelVersionStatus(StrEnum):
@@ -46,9 +45,13 @@ def pg_enum(*args: Any, **kwargs: Any) -> Any:
     return SQLEnum(name=name_val)
 
 
+# 🟢 核心修正：避免回傳 tuple，直接解包並回傳正確的字串型別值，徹底解決 ArgumentError
 def enum_default(*args: Any, **kwargs: Any) -> Any:
     if args:
-        return args
+        first_arg = args[0]
+        if hasattr(first_arg, "value"):
+            return first_arg.value
+        return str(first_arg)
     return None
 
 
