@@ -5,6 +5,7 @@ Revises: None
 Create Date: 2026-09-11 11:00:00.000000
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -29,7 +30,7 @@ def upgrade() -> None:
         ),
     )
 
-    # 🟢 2. 再建立正確的 evidence 表（並將長代碼換行以符合 Lint 規範）
+    # 🟢 2. 再建立 evidence 表
     op.create_table(
         "evidence",
         sa.Column("id", sa.Integer(), primary_key=True),

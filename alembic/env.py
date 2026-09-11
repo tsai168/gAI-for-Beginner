@@ -19,7 +19,8 @@ def run_migrations_online() -> None:
         url=db_url,
     )
     with connectable.connect() as connection:
-        # 🟢 正確清理 evidence 和 source 資料表，避免外鍵殘留衝突
+        # 🟢 同時強制清理 event、evidence 和 source，徹底粉碎外鍵殘留衝突
+        connection.execute(text("DROP TABLE IF EXISTS event CASCADE;"))
         connection.execute(text("DROP TABLE IF EXISTS evidence CASCADE;"))
         connection.execute(text("DROP TABLE IF EXISTS source CASCADE;"))
         connection.commit()
