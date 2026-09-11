@@ -16,7 +16,6 @@ target_metadata = None
 
 def run_migrations_online() -> None:
     """以 online 模式執行遷移，並在開跑前強制清理舊關聯。"""
-    # 優先讀取環境變數中的資料庫網址，若無則使用 ini 設定
     db_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
     
     connectable = engine_from_config(
@@ -27,18 +26,15 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        # 🔥 核心修正：強制在測試跑 migration 之前，把卡住的外鍵與表徹底重置
         connection.execute(text("DROP TABLE IF EXISTS event CASCADE;"))
         connection.execute(text("DROP TABLE IF EXISTS source CASCADE;"))
         connection.commit()
 
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        # 這裡縮成單行，並且逗號後面補上一個空格，完全符合 Ruff/Lint 規範
+                context.configure(connection=connection, target_metadata=target_metadata)
 
-        with context.begin_transaction():
-            context.run_migrations()
+                with context.begin_transaction():
+                    context.run_migrations()
 
 if context.is_offline_mode():
     # 測試環境通常只跑 online 模式
