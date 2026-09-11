@@ -1,56 +1,39 @@
-"""init db
+import os
+from logging.config import fileConfig
 
-Revision ID: 0001
-Revises: None
-Create Date: 2026-09-11 11:00:00.000000
+from alembic import context
+from sqlalchemy import engine_from_config, pool, text
 
-"""
-
-import sqlalchemy as sa
-from alembic import op
-
-# revision identifiers, used by Alembic.
-revision = "0001"
-down_revision = None
-branch_labels = None
-depends_on = None
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+target_metadata = None
 
 
-def upgrade() -> None:
-    # 🟢 1. 先建立主表 source
-    op.create_table(
-        "source",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=True,
-        ),
+def run_migrations_online() -> None:
+    db_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        url=db_url,
     )
+    with connectable.connect() as connection:
+        # 🔥 終極大絕招：直接清空 public schema 並重建，徹底摧毀所有殘留的舊表與外鍵
+        connection.execute(text("DROP SCHEMA public CASCADE;"))
+        connection.execute(text("CREATE SCHEMA public;"))
+        connection.execute(text("GRANT ALL ON SCHEMA public TO public;"))
+        connection.commit()
 
-    # 🟢 2. 再建立 evidence 表
-    op.create_table(
-        "evidence",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "source_id",
-            sa.Integer(),
-            sa.ForeignKey("source.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-        sa.Column("title", sa.String(length=255), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=True,
-        ),
-    )
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
 
 
-def downgrade() -> None:
-    # 🔴 刪除時先刪 custom 關聯的 evidence
-    op.drop_table("evidence")
-    op.drop_table("source")
+if context.is_offline_mode():
+    pass
+else:
+    run_migrations_online()
