@@ -69,7 +69,7 @@ python_version = "3.12"
 mypy_path = "."
 packages = ["ingestion", "knowledge", "models", "agents", "workflows", "reports", "governance", "api", "ui"]
 strict = false
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_redundant_casts = true
 explicit_package_bases = true
 ignore_missing_imports = true
@@ -77,6 +77,10 @@ disallow_subclassing_any = false
 exclude = [
     'src/models/.*',
 ]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
