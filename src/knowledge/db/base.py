@@ -6,6 +6,14 @@ from sqlalchemy.orm import declarative_base
 Base: Any = declarative_base()
 
 
+# 補回測試框架需要的證據類型列舉
+class EvidenceType(StrEnum):
+    NEWS = "NEWS"
+    FILING = "FILING"
+    PRICE = "PRICE"
+    GENERIC = "GENERIC"
+
+
 # 補回測試框架需要的證據階段列舉
 class EvidenceStage(StrEnum):
     COLLECTED = "COLLECTED"
