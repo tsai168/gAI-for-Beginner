@@ -1,59 +1,33 @@
-import sqlalchemy
-from src.models.base import Base
+import os
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+target_metadata = None
 
 
-class Source(Base):
-    __tablename__ = "source"
-
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String(255), nullable=False)
-    created_at = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        server_default=sqlalchemy.text("now()"),
-        nullable=True,
+def run_migrations_online() -> None:
+    db_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        url=db_url,
     )
-
-    evidences = sqlalchemy.orm.relationship(
-        "Evidence", back_populates="source", cascade="all, delete-orphan"
-    )
-    events = sqlalchemy.orm.relationship(
-        "Event", back_populates="source", cascade="all, delete-orphan"
-    )
-
-
-class Evidence(Base):
-    __tablename__ = "evidence"
-
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    source_id = sqlalchemy.Column(
-        sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("source.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    title = sqlalchemy.Column(sqlalchemy.String(255), nullable=False)
-    created_at = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        server_default=sqlalchemy.text("now()"),
-        nullable=True,
-    )
-
-    source = sqlalchemy.orm.relationship("Source", back_populates="evidences")
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
 
 
-class Event(Base):
-    __tablename__ = "event"
-
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    source_id = sqlalchemy.Column(
-        sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("source.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    title = sqlalchemy.Column(sqlalchemy.String(255), nullable=False)
-    created_at = Column_data = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        server_default=sqlalchemy.text("now()"),
-        nullable=True,
-    )
-
-    source = sqlalchemy.orm.relationship("Source", back_populates="events")
+if context.is_offline_mode():
+    pass
+else:
+    run_migrations_online()
