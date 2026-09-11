@@ -6,7 +6,14 @@ from sqlalchemy.orm import declarative_base
 Base: Any = declarative_base()
 
 
-# 補回測試框架需要的狀態列舉（改用最標準的 StrEnum）
+# 補回測試框架需要的分類列舉
+class EventTaxonomyCode(StrEnum):
+    GENERIC = "GENERIC"
+    FINANCIAL = "FINANCIAL"
+    MARKET = "MARKET"
+
+
+# 補回測試框架需要的狀態列舉
 class EventLifecycleStatus(StrEnum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE"
