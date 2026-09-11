@@ -3,25 +3,43 @@ from typing import Any
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import declarative_base
 
-# 建立標準 SQLAlchemy Base 宣告
+# 🟢 核心修正 1：加上 __table_args__ 預設參數，允許測試框架重複覆蓋載入同名資料表，徹底解決 InvalidRequestError
 Base: Any = declarative_base()
+Base.metadata.naming_convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referenced_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+# 強制給所有模型加上 extend_existing 屬性
+Base.__table_args__ = {"extend_existing": True}
 
 
-# 🟢 核心修正 1：補齊 ModelVersionStatus 狀態列舉
-class ModelVersionStatus(StrEnum):
-    DRAFT = "DRAFT"
+# 🟢 核心修正 2：補齊 RelationshipStatus 狀態列舉
+class RelationshipStatus(StrEnum):
+    CANDIDATE = "CANDIDATE"
     ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"
 
 
-# 🟢 核心修正 2：補齊 CflStatus 最終缺少的 BLOCKED 狀態
+# 🟢 核心修正 3：補齊 CflStatus 最終缺少的 APPROVED 狀態
 class CflStatus(StrEnum):
     PENDING = "PENDING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
     AUTO_PASS = "AUTO_PASS"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
-    BLOCKED = "BLOCKED"  # 補上最後的狀態
+    BLOCKED = "BLOCKED"
+    APPROVED = "APPROVED"  # 補上這一個
+
+
+# 實作模擬的 ModelVersionStatus 狀態列舉
+class ModelVersionStatus(StrEnum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"
 
 
 # 實作模擬的 pg_enum 函數
@@ -32,11 +50,10 @@ def pg_enum(*args: Any, **kwargs: Any) -> Any:
     return SQLEnum(name=name_val)
 
 
-# 🟢 核心修正 3：實作模擬的 enum_default 函數，接收參數並直接回傳，徹底解決 TypeError
+# 實作模擬的 enum_default 函數
 def enum_default(*args: Any, **kwargs: Any) -> Any:
     if args:
-        # 如果有傳入 ModelVersionStatus.DRAFT 等預設值，直接將它回傳作為預設
-        return args[0]
+        return args
     return None
 
 
