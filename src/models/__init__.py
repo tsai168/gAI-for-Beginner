@@ -1,1 +1,4 @@
-"""models layer package (WBS scaffold; modules land per Work-3 §2)."""
+from src.models.base import Base
+from src.models.entities import Event, Evidence, Source
+
+__all__ = ["Base", "Source", "Evidence", "Event"]
