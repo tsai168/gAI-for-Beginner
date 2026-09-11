@@ -16,25 +16,40 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 🟢 步驟 1：先建立主表 source
+    # 🟢 1. 先建立主表 source
     op.create_table(
         "source",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=True,
+        ),
     )
 
-    # 🟢 步驟 2：source 建立完成後，才建立帶有外鍵的 event 表
+    # 🟢 2. 再建立正確的 evidence 表（並將長代碼換行以符合 Lint 規範）
     op.create_table(
-        "event",
+        "evidence",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("source_id", sa.Integer(), sa.ForeignKey("source.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "source_id",
+            sa.Integer(),
+            sa.ForeignKey("source.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("title", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=True,
+        ),
     )
 
 
 def downgrade() -> None:
-    # 🔴 降級時順序相反：先刪除 event 再刪除 source
-    op.drop_table("event")
+    # 🔴 刪除時先刪 custom 關聯的 evidence
+    op.drop_table("evidence")
     op.drop_table("source")

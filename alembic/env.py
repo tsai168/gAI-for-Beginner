@@ -19,10 +19,14 @@ def run_migrations_online() -> None:
         url=db_url,
     )
     with connectable.connect() as connection:
-        connection.execute(text("DROP TABLE IF EXISTS event CASCADE;"))
+        # 🟢 正確清理 evidence 和 source 資料表，避免外鍵殘留衝突
+        connection.execute(text("DROP TABLE IF EXISTS evidence CASCADE;"))
         connection.execute(text("DROP TABLE IF EXISTS source CASCADE;"))
         connection.commit()
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
         with context.begin_transaction():
             context.run_migrations()
 
