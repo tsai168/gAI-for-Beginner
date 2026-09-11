@@ -3,7 +3,7 @@ from typing import Any
 from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String, event, Table
 from sqlalchemy.orm import declarative_base
 
-# 1. 獨立宣告自己唯一的 Base，絕不交叉引用
+# 1. 獨立宣告自己唯一的 Base
 Base: Any = declarative_base()
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -14,13 +14,14 @@ Base.metadata.naming_convention = {
 }
 
 
-# 2. 強制開啟重複覆蓋機制
+# 🟢 核心修正 1：利用 SQLAlchemy 事件監聽器，強制給所有 Table 加上 extend_existing=True
+# 徹底根除並行測試時引發的 Table 'model_version' is already defined 錯誤
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 3. 核心 Universe 資料模型類別
+# 2. 核心 Universe 資料模型類別
 class Universe(Base):
     __tablename__ = "universe"
 
@@ -32,7 +33,7 @@ class Universe(Base):
     )
 
 
-# 4. 靜態核心列舉（Enums）
+# 3. 靜態核心列舉（Enums）
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -211,7 +212,7 @@ class EventLifecycleStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
-# 5. 核心自訂函數與預設值模擬
+# 4. 核心自訂函數與預設值模擬
 def pg_enum(*args: Any, **kwargs: Any) -> Any:
     if args and isinstance(args, type) and issubclass(args, Enum):
         return SQLEnum(args)
@@ -228,7 +229,7 @@ def enum_default(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-# 6. 被繼承的基底 Mixin 類別
+# 5. 被繼承的基底 Mixin 類別
 class AuditMixin: pass
 class ObservedTimeMixin: pass
 class BitemporalMixin: pass
