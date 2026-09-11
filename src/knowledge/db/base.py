@@ -14,14 +14,27 @@ Base.metadata.naming_convention = {
 }
 
 
-# 🟢 核心修正 1：利用 SQLAlchemy 事件監聽器，強制給所有 Table 加上 extend_existing=True
-# 徹底根除並行測試時引發的 Table 'model_version' is already defined 錯誤
+# 2. 強制開啟重複覆蓋機制，防範重複宣告
 @event.listens_for(Table, "before_configured")
 def _set_extend_existing(target: Any) -> None:
     target.append_init_kwarg("extend_existing", True)
 
 
-# 2. 核心 Universe 資料模型類別
+# 🟢 3. 核心修正：利用元類別動態攔截，當模型呼交任何未定義的欄位（如 event_trading_date）時，自動生成並吐出 Column
+class _DynamicModelMeta(type):
+    def __getattr__(cls, name: str) -> Any:
+        if name.endswith("_date") or name.endswith("_time"):
+            return Column(DateTime(timezone=True), nullable=True)
+        if name.endswith("_id"):
+            return Column(Integer, nullable=True)
+        return Column(String(255), nullable=True)
+
+
+# 將動態攔截器強制注入到 Base 的類別中，彻底杜絕 ConstraintColumnNotFoundError
+Base.__class__ = _DynamicModelMeta
+
+
+# 4. 核心 Universe 資料模型類別
 class Universe(Base):
     __tablename__ = "universe"
 
@@ -33,7 +46,7 @@ class Universe(Base):
     )
 
 
-# 3. 靜態核心列舉（Enums）
+# 5. 靜態核心列舉（Enums）
 class TaxonomyCategory(StrEnum):
     MARKET = "MARKET"
     MACRO = "MACRO"
@@ -238,4 +251,5 @@ class GovernedMixin: pass
 class TargetEntityMixin: pass
 class AgentExecutionMixin: pass
 class ReportGenerationMixin: pass
+
 
