@@ -4,11 +4,12 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import declarative_base
 
 Base: Any = declarative_base()
+# 🟢 核心修正 1：精準修正 SQLAlchemy 命名規則，將 referenced 改為正確的 referred
 Base.metadata.naming_convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referenced_table_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s"
 }
 
@@ -29,7 +30,8 @@ class CflStatus(StrEnum):
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
     BLOCKED = "BLOCKED"
     APPROVED = "APPROVED"
-    SUPERSEDED = "SUPERSEDED"  # 🟢 補上最後的狀態
+    SUPERSEDED = "SUPERSEDED"
+    REJECTED = "REJECTED"  # 🟢 核心修正 2：補上最後的 REJECTED 狀態
 
 
 class ModelVersionStatus(StrEnum):
@@ -45,7 +47,6 @@ def pg_enum(*args: Any, **kwargs: Any) -> Any:
     return SQLEnum(name=name_val)
 
 
-# 🟢 核心修正：避免回傳 tuple，直接解包並回傳正確的字串型別值，徹底解決 ArgumentError
 def enum_default(*args: Any, **kwargs: Any) -> Any:
     if args:
         first_arg = args[0]
