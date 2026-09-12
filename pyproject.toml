@@ -79,5 +79,6 @@ asyncio_mode = "auto"
 markers = [
     "integration: needs Postgres + Temporal dev (docker compose up)",
     "migration: exercises Alembic migrations against a live DB",
+    "temporal: real Temporal workflow execution via a time-skipping test server; skips (not fails) if the server can't start",
 ]
 addopts = "-ra"
