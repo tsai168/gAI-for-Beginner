@@ -61,5 +61,10 @@ def publish_company_event_report(
         publication_tier=tier,
         content_ref=content_ref,
     )
-    maybe_advance_event_to_published(session, event, publication_tier=tier, cfl_08_status=None)
+    # `gate_status` is what `assert_publication_allowed` already checked
+    # above — reuse it here instead of hardcoding None, or a MATERIAL_REVIEW
+    # publish would immediately fail its *own* PUBLISHED-transition gate.
+    maybe_advance_event_to_published(
+        session, event, publication_tier=tier, cfl_08_status=gate_status
+    )
     return report
