@@ -14,6 +14,8 @@
 
 **修正**：`Evidence` 改用 `GovernedMixin`（含 `CflStatusMixin`）；新增 migration `0003_evidence_confidence.py` 對既有 `evidence` 表 `ADD COLUMN confidence numeric(5,4)`、`ADD COLUMN model_version_id uuid`（皆 nullable，不影響既有資料；不改寫、不刪除既有 migration，符合 CLAUDE.md §3／§4）。`tests/test_schema_contract.py` 之 `evidence` 契約清單同步補上。
 
+**已知風險並已修正（2026-09-12，CI `alembic round-trip`／`integration` 失敗後診斷）**：migration 0001／0002 用 `Base.metadata.create_all(tables=[...])` 建表，其 DDL 來自**當下即時**的 ORM metadata，不是凍結的歷史快照——`Evidence` 改用 `GovernedMixin` 後，migration 0001 重跑時**已經**會建出 `confidence`／`model_version_id` 兩欄，導致 0003 的 `ADD COLUMN` 直接撞上 `DuplicateColumn`。0003 已改為 `ADD COLUMN IF NOT EXISTS`／`DROP COLUMN IF EXISTS`，無論 0001 是否已建出該欄都能正確 round-trip。**後續政策**：任何在既有表上新增欄位的 migration，一律用 `IF NOT EXISTS`／`IF EXISTS` 寫，不假設「上游 migration 一定沒建過」。
+
 ## 1. 範圍（B5，8 模組，依 CLAUDE.md §8 拆批）
 
 B5a（本 ADR）：M01、M02。後續：B5b（M03 Seco／M04 CMI，含 §2.9 模型輸出表）、B5c（M05 Materiality／M07 PIT 市值）、B5d（M06 事件窗口／AR-CAR／M08 穩健性檢核）。
