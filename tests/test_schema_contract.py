@@ -260,6 +260,20 @@ CONTRACT_COLUMNS: dict[str, set[str]] = {
         "created_at",
         "updated_at",
     },
+    # --- WBS-B5d (ADR-0003 G-1, ADR-0016) ---
+    "valuation_event_window": {
+        "valuation_event_window_id",
+        "event_id",
+        "window_pre",
+        "window_post",
+        "benchmark_model",
+        "ar_series",
+        "car",
+        "market_cap",
+        "model_version_id",
+        "created_at",
+        "updated_at",
+    },
 }
 
 EXPECTED_TABLES = set(CONTRACT_COLUMNS) | {"company_taxonomy"}

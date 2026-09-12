@@ -34,6 +34,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from knowledge.db.base import (
     AuditMixin,
     Base,
+    BenchmarkModel,
     BitemporalMixin,
     EventLifecycleStatus,
     EventTaxonomyCode,
@@ -60,8 +61,9 @@ from knowledge.db.base import (
 _PROJECT_ID_DEFAULT = "cpo-ai"
 _MONEY = Numeric(20, 4)
 _QTY = Numeric(20, 0)
-_SCORE = Numeric(6, 3)
+_SCORE = Numeric(6, 3)  # 0..100 scale (Seco/CMI/Materiality)
 _UNIT = Numeric(5, 4)
+_RETURN = Numeric(12, 6)  # AR/CAR — fractional returns, not the 0..100 scale
 _TS = DateTime(timezone=True)  # timestamptz (ADR-0007 §2)
 
 
@@ -509,6 +511,41 @@ class CmiScore(BitemporalMixin, AuditMixin, Base):
     )
 
     __table_args__ = (Index("ix_cmi_score_company_as_of", "company_id", "as_of"),)
+
+
+# =====================================================================
+# WBS-B5d — §2.9 valuation_event_window (M06). ADR-0016.
+# =====================================================================
+
+
+class ValuationEventWindow(AuditMixin, Base):
+    __tablename__ = "valuation_event_window"
+
+    valuation_event_window_id: Mapped[uuid.UUID] = _uuid_pk("valuation_event_window_id")
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("event.event_id", ondelete="CASCADE"), nullable=False
+    )
+    window_pre: Mapped[int] = mapped_column(Integer, nullable=False)
+    window_post: Mapped[int] = mapped_column(Integer, nullable=False)
+    benchmark_model: Mapped[str] = mapped_column(
+        pg_enum(BenchmarkModel, "benchmark_model"), nullable=False
+    )
+    ar_series: Mapped[list[Any]] = mapped_column(JSONB, nullable=False)  # ordered daily AR
+    car: Mapped[float] = mapped_column(_RETURN, nullable=False)
+    market_cap: Mapped[float | None] = mapped_column(_MONEY, nullable=True)  # M07, CF-24
+    model_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("model_version.model_version_id", ondelete="RESTRICT"), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_valuation_event_window_event_id", "event_id"),
+        UniqueConstraint(
+            "event_id",
+            "benchmark_model",
+            "model_version_id",
+            name="event_benchmark_model_version",
+        ),
+    )
 
 
 CFL_GOVERNED_TABLES: tuple[str, ...] = ("company", "relationship", "event", "evidence")

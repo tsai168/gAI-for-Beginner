@@ -28,6 +28,7 @@ class AlignmentBasis(enum.StrEnum):
 class TradingCalendar(Protocol):
     def is_trading_day(self, d: date) -> bool: ...
     def next_trading_day(self, d: date) -> date: ...
+    def previous_trading_day(self, d: date) -> date: ...
 
 
 @dataclass(slots=True)
@@ -44,6 +45,37 @@ class SetTradingCalendar:
         if not candidates:
             raise ValueError(f"no known trading day after {d}")
         return candidates[0]
+
+    def previous_trading_day(self, d: date) -> date:
+        candidates = sorted((day for day in self.trading_days if day < d), reverse=True)
+        if not candidates:
+            raise ValueError(f"no known trading day before {d}")
+        return candidates[0]
+
+
+def trading_days_around(
+    calendar: TradingCalendar, *, center: date, pre: int, post: int
+) -> list[date]:
+    """WBS-B5d (M06): `pre` trading days before `center`, `center` itself,
+    then `post` trading days after — i.e. the [-pre, +post] event window
+    (Charter §14.1). `center` (t=0) must already be a trading day (P06's
+    alignment guarantees this)."""
+    if pre < 0 or post < 0:
+        raise ValueError("pre and post must be >= 0")
+    before: list[date] = []
+    cursor = center
+    for _ in range(pre):
+        cursor = calendar.previous_trading_day(cursor)
+        before.append(cursor)
+    before.reverse()
+
+    after: list[date] = []
+    cursor = center
+    for _ in range(post):
+        cursor = calendar.next_trading_day(cursor)
+        after.append(cursor)
+
+    return [*before, center, *after]
 
 
 @dataclass(slots=True, frozen=True)

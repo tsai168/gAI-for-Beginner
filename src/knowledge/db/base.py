@@ -169,6 +169,13 @@ class ModelVersionStatus(enum.StrEnum):
     SUPERSEDED = "SUPERSEDED"
 
 
+class BenchmarkModel(enum.StrEnum):
+    """Charter §14.2 CF-23: at least these two benchmarks."""
+
+    MARKET_ADJUSTED = "MARKET_ADJUSTED"
+    MARKET_MODEL = "MARKET_MODEL"
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> Enum:
     """varchar + CHECK (native_enum=False), per ADR-0007 §2."""
     return Enum(
