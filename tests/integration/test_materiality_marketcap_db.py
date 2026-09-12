@@ -41,7 +41,25 @@ def test_score_event_materiality_sets_score_and_raises_cfl04(db_session) -> None
     assert ev.materiality_score == pytest.approx(
         0.25 * 80 + 0.25 * 70 + 0.20 * 60 + 0.20 * 50 + 0.10 * 40
     )
-    assert status is CflStatus.PENDING  # B1 G01 stub; B8 supplies the real rule
+    assert status is CflStatus.AUTO_PASS  # WBS-B8: score 63.5 < threshold -> Auto-pass
+
+
+def test_score_event_materiality_high_score_raises_review(db_session) -> None:  # type: ignore[no-untyped-def]
+    ev = Event(event_taxonomy_code="EV12", retrieved_at=RETRIEVED)
+    db_session.add(ev)
+    db_session.flush()
+
+    factors = MaterialityFactors(
+        cpo_relevance=95,
+        evidence_strength=95,
+        commercial_impact=95,
+        ecosystem_impact=95,
+        novelty=95,
+    )
+    status = score_event_materiality(db_session, ev, factors)
+
+    assert ev.materiality_score == pytest.approx(95.0)
+    assert status is CflStatus.REVIEW_REQUIRED  # WBS-B8: high Materiality needs Human Review
 
 
 def test_pit_market_cap_uses_each_dates_own_shares_outstanding(db_session) -> None:  # type: ignore[no-untyped-def]

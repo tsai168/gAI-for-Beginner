@@ -36,7 +36,7 @@ def test_snapshot_idempotency_key() -> None:
 
 
 def test_snapshot_is_append_only() -> None:
-    assert APPEND_ONLY_TABLES == ("source_snapshot",)
+    assert APPEND_ONLY_TABLES == ("source_snapshot", "audit_log")
 
 
 def test_source_fk_chain() -> None:

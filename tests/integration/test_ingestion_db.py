@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 
-from governance.cfl import CflId, DefaultCflService
+from governance.cfl import CflId, RuleBasedCflService
 from ingestion.dedup import DedupVerdict
 from ingestion.fetch import FixtureAdapter, fetch_and_register
 from knowledge.db.base import CflStatus
@@ -74,7 +74,7 @@ def test_cfl_status_write_via_guard_ok(db_session) -> None:  # type: ignore[no-u
     c = Company(company_name="Beacon Photonics", universe="Adjacent")
     db_session.add(c)
     db_session.flush()
-    DefaultCflService().set_status(
+    RuleBasedCflService().set_status(
         db_session,
         table="company",
         row_id=c.company_id,

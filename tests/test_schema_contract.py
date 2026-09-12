@@ -274,6 +274,21 @@ CONTRACT_COLUMNS: dict[str, set[str]] = {
         "created_at",
         "updated_at",
     },
+    # --- WBS-B8 (ADR-0020 — G03 audit log, not part of Work-2's frozen
+    # contract; same gap-filling posture as source_snapshot) ---
+    "audit_log": {
+        "audit_log_id",
+        "agent_id",
+        "rule_ref",
+        "table_name",
+        "row_id",
+        "decision",
+        "evidence_ids",
+        "confidence",
+        "model_version_id",
+        "correlation_id",
+        "created_at",
+    },
 }
 
 EXPECTED_TABLES = set(CONTRACT_COLUMNS) | {"company_taxonomy"}

@@ -462,6 +462,35 @@ class SourceSnapshot(Base):
     )
 
 
+class AuditLogEntry(Base):
+    """G03 — append-only decision trail (WBS-B8, ADR-0020, CF-45 / Charter
+    §22 Auditability). Not part of Work-2 §2/§2.9 (no frozen schema exists
+    for it — a genuine gap, closed the same way ADR-0003 closed the K01–K06
+    gaps). A DB trigger (migration 0006) rejects UPDATE/DELETE, reusing the
+    same `cpoai_append_only()` guard as `source_snapshot` (CF-08/GP-15)."""
+
+    __tablename__ = "audit_log"
+
+    audit_log_id: Mapped[uuid.UUID] = _uuid_pk("audit_log_id")
+    agent_id: Mapped[str | None] = mapped_column(nullable=True)
+    rule_ref: Mapped[str] = mapped_column(nullable=False)  # e.g. "CFL-04"
+    table_name: Mapped[str] = mapped_column(nullable=False)
+    row_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    decision: Mapped[str] = mapped_column(nullable=False)
+    evidence_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=text("'{}'::uuid[]")
+    )
+    confidence: Mapped[float | None] = mapped_column(_UNIT, nullable=True)
+    model_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    correlation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(_TS, nullable=False, server_default=text("now()"))
+
+    __table_args__ = (
+        Index("ix_audit_log_table_row", "table_name", "row_id"),
+        Index("ix_audit_log_correlation_id", "correlation_id"),
+    )
+
+
 # =====================================================================
 # WBS-B5b — §2.9 model-output tables (deferred from B1/B2, ADR-0003 G-1):
 # seco_score (M03) / cmi_score (M04). Bitemporal (valid_from/valid_to),
@@ -549,7 +578,7 @@ class ValuationEventWindow(AuditMixin, Base):
 
 
 CFL_GOVERNED_TABLES: tuple[str, ...] = ("company", "relationship", "event", "evidence")
-APPEND_ONLY_TABLES: tuple[str, ...] = ("source_snapshot",)
+APPEND_ONLY_TABLES: tuple[str, ...] = ("source_snapshot", "audit_log")
 
 # Cross-module FKs created in migration 0002 (both ends already exist by then).
 DEFERRED_FKS: tuple[tuple[str, str, str, str], ...] = (

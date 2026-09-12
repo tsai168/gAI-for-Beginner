@@ -60,7 +60,7 @@ def test_confirm_named_relationship_raises_cfl05_first_time(db_session) -> None:
     )
     status = confirm_relationship(db_session, rel)
     assert rel.status == "CONFIRMED"
-    assert status is CflStatus.PENDING
+    assert status is CflStatus.REVIEW_REQUIRED  # WBS-B8: first named Confirm always needs Review
 
 
 def test_confirm_unnamed_relationship_does_not_raise(db_session) -> None:  # type: ignore[no-untyped-def]
@@ -172,7 +172,7 @@ def test_record_contradiction_raises_cfl07(db_session) -> None:  # type: ignore[
         db_session, evidence_type="CONTRADICT", content_hash="abc123", retrieved_at=RETRIEVED
     )
     status = record_contradiction(db_session, ev)
-    assert status is CflStatus.PENDING
+    assert status is CflStatus.REVIEW_REQUIRED  # WBS-B8: CFL-07 must never Auto-pass
     assert CflId.CFL_07 in NO_AUTO_PASS
 
 

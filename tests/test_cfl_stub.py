@@ -1,4 +1,6 @@
-"""WBS-B1: G01 interface stub behaviour (ADR-0004 / ADR-0007 §6).
+"""G01 structural contract (ADR-0004 / ADR-0007 §6): CFL id set, lifecycle
+transitions, NO_AUTO_PASS. Unchanged by the WBS-B8 rule-engine swap
+(ADR-0020) — see test_cfl_rules_db.py for the real per-CFL decisions.
 
 The DB direct-write guard is exercised in the `migration` job (needs Postgres);
 here we cover the pure-Python contract.

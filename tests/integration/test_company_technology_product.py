@@ -43,7 +43,7 @@ def test_list_companies_by_universe(db_session) -> None:  # type: ignore[no-unty
 def test_first_upgrade_to_core_raises_cfl02(db_session) -> None:  # type: ignore[no-untyped-def]
     c = create_company(db_session, company_name="Rising Co", universe="Adjacent")
     status = set_universe(db_session, c, "Core")
-    assert status is CflStatus.PENDING
+    assert status is CflStatus.REVIEW_REQUIRED  # WBS-B8: first Core upgrade always needs Review
     assert c.universe == "Core"
 
 

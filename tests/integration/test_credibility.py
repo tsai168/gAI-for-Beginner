@@ -45,7 +45,7 @@ def test_score_evidence_credibility_sets_tier_and_raises_cfl03(db_session) -> No
     status = score_evidence_credibility(db_session, ev)
 
     assert ev.source_credibility_tier == "S2"
-    assert status is CflStatus.PENDING  # B1 G01 stub; B8 supplies the real rule
+    assert status is CflStatus.AUTO_PASS  # WBS-B8: known official source -> Auto-pass
 
 
 def test_score_evidence_credibility_without_source_leaves_tier_none(db_session) -> None:  # type: ignore[no-untyped-def]
@@ -57,6 +57,7 @@ def test_score_evidence_credibility_without_source_leaves_tier_none(db_session) 
     db_session.add(ev)
     db_session.flush()
 
-    score_evidence_credibility(db_session, ev)
+    status = score_evidence_credibility(db_session, ev)
 
     assert ev.source_credibility_tier is None
+    assert status is CflStatus.REVIEW_REQUIRED  # WBS-B8: unknown source -> Review
