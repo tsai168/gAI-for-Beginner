@@ -124,6 +124,8 @@ CONTRACT_COLUMNS: dict[str, set[str]] = {
         "content_hash",
         "snapshot_ref",
         "cfl_status",
+        "confidence",  # ADR-0013 §0 (B1 gap fix: Work-2 §2.1 "all entities")
+        "model_version_id",  # ADR-0013 §0
         "occurred_at",
         "published_at",
         "retrieved_at",

@@ -35,7 +35,6 @@ from knowledge.db.base import (
     AuditMixin,
     Base,
     BitemporalMixin,
-    CflStatusMixin,
     EventLifecycleStatus,
     EventTaxonomyCode,
     EvidenceStage,
@@ -276,7 +275,7 @@ class Event(ObservedTimeMixin, BitemporalMixin, GovernedMixin, AuditMixin, Base)
 # --- K06 Evidence / Source / Citation --------------------------------------------
 
 
-class Evidence(ObservedTimeMixin, CflStatusMixin, AuditMixin, Base):
+class Evidence(ObservedTimeMixin, GovernedMixin, AuditMixin, Base):
     __tablename__ = "evidence"
 
     evidence_id: Mapped[uuid.UUID] = _uuid_pk("evidence_id")
