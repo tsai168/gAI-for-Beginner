@@ -124,8 +124,13 @@ def test_full_daily_pipeline_discover_to_publish(db_session) -> None:  # type: i
     assert report.publication_tier == "INTERNAL_AUTO"
 
     # --- Auditability (Charter §22, CF-45) ---------------------------------
+    # Two real governance actions happened against this event: G01's own
+    # AUTO-PASS decision (score_event_materiality's submit_candidate), then
+    # the separate human-confirmed APPROVED transition (set_status above) —
+    # G03 logs both, not just the latest.
     event_decisions = list_decisions_for_row(db_session, table_name="event", row_id=event.event_id)
-    assert [d.rule_ref for d in event_decisions] == ["CFL-04"]
+    assert [d.rule_ref for d in event_decisions] == ["CFL-04", "CFL-04"]
+    assert [d.decision for d in event_decisions] == ["AUTO-PASS", "APPROVED"]
     evidence_decisions = list_decisions_for_row(
         db_session, table_name="evidence", row_id=evidence.evidence_id
     )
