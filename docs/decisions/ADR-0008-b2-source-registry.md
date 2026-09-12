@@ -43,9 +43,19 @@ uuid PK；`source_id` FK→`source`（RESTRICT）；`content_hash`（sha256 hex�
 
 B1 時 `source` 尚未存在，故 B1 之 `event`/`evidence.source_id` 為 plain UUID。
 
-- ORM：改為 `ForeignKey("source.source_id", ondelete="SET NULL", use_alter=True)` — `use_alter` 使 `create_all` 不在建表時 inline 此 FK。
-- migration 0002：`op.create_foreign_key("fk_event_source_id_source", ...)`、`fk_evidence_source_id_source`（兩端此時皆存在）。
-- `DEFERRED_FKS` 常數記錄於 models.py。
+- ORM：**不**在 `event.source_id`／`evidence.source_id` 掛任何 `ForeignKey` 物件——純 `UUID` 欄位。
+- migration 0002：`op.create_foreign_key("fk_event_source_id_source", ...)`、`fk_evidence_source_id_source`（兩端此時皆存在）；純 DB 層約束，與 ORM metadata 無關。
+- `DEFERRED_FKS` 常數記錄於 models.py，作為此約束意圖之文件依據（非執行依據）。
+
+**修正（2026-09-12，CI `alembic round-trip`／`integration` 失敗後診斷）**：原設計曾用
+`ForeignKey(..., use_alter=True)` 並假設「migration 0001 之
+`create_all(tables=_B1_TABLES)` 因 `source` 不在 `tables=` 清單中，`use_alter`
+會自動跳過該 FK 的 ALTER」——**此假設錯誤**。SQLAlchemy 對 `use_alter=True` 的
+FK 是在**同一次** `create_all()` 呼叫內以 ALTER 方式補上（與其他表同批次建立
+後、同一交易內執行），並不會因為被參照表不在 `tables=` 篩選清單就略過；因
+`source` 表尚不存在，`ALTER TABLE event ADD CONSTRAINT ... REFERENCES source`
+直接報 `relation "source" does not exist`。改為 ORM 完全不宣告該 FK、僅由
+migration 0002 以 `op.create_foreign_key` 手動下 DDL，徹底避開此排序問題。
 
 ## 6. Migration 分批策略（延續 ADR-0007）
 

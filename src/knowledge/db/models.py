@@ -232,9 +232,12 @@ class Event(ObservedTimeMixin, BitemporalMixin, GovernedMixin, AuditMixin, Base)
         nullable=False, server_default=text(f"'{_PROJECT_ID_DEFAULT}'")
     )
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    source_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("source.source_id", ondelete="SET NULL", use_alter=True), nullable=True
-    )
+    # No ORM-level FK: `source` doesn't exist yet when B1's create_all runs,
+    # and SQLAlchemy emits use_alter FKs within the *same* create_all call
+    # regardless of the `tables=` filter, which fails with "relation source
+    # does not exist". The real constraint is added purely via
+    # op.create_foreign_key in migration 0002 (ADR-0008 §5, corrected).
+    source_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     revision_of_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("event.event_id", ondelete="RESTRICT"), nullable=True
     )
@@ -277,9 +280,8 @@ class Evidence(ObservedTimeMixin, CflStatusMixin, AuditMixin, Base):
     __tablename__ = "evidence"
 
     evidence_id: Mapped[uuid.UUID] = _uuid_pk("evidence_id")
-    source_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("source.source_id", ondelete="SET NULL", use_alter=True), nullable=True
-    )
+    # See Event.source_id above: no ORM-level FK, added via migration 0002.
+    source_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     entity_ref: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     entity_ref_type: Mapped[str | None] = mapped_column(
         pg_enum(RefEntityType, "ref_entity_type_evd"), nullable=True

@@ -47,11 +47,16 @@ def test_source_fk_chain() -> None:
 
 
 def test_event_evidence_source_fk_deferred() -> None:
+    # No ORM-level FK on purpose (ADR-0008 §5, corrected): SQLAlchemy would
+    # emit a use_alter FK's ALTER within the *same* create_all() call that
+    # builds event/evidence in migration 0001, before `source` exists. The
+    # constraint is added purely via op.create_foreign_key in migration 0002;
+    # DEFERRED_FKS documents that intent.
     assert DEFERRED_FKS == (
         ("event", "source_id", "source", "source_id"),
         ("evidence", "source_id", "source", "source_id"),
     )
     for model in (Event, Evidence):
-        fks = model.__table__.c.source_id.foreign_keys
-        assert any(fk.column.table.name == "source" for fk in fks)
-        assert all(fk.use_alter for fk in fks)
+        col = model.__table__.c.source_id
+        assert col.foreign_keys == set()
+        assert col.nullable is True
