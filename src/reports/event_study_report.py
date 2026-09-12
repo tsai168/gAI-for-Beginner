@@ -12,8 +12,9 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from governance.cfl import CflService, default_cfl_service
 from governance.publication import PublicationTier, assert_publication_allowed
-from knowledge.db.base import CflStatus, RefEntityType, ReportType
+from knowledge.db.base import RefEntityType, ReportType
 from knowledge.db.models import ResearchReport
 from knowledge.repository.event import get_event
 from knowledge.repository.research_report import create_report
@@ -22,7 +23,11 @@ from reports._common import maybe_advance_event_to_published
 
 
 def publish_event_study_report(
-    session: Session, event_id: uuid.UUID, *, content_ref: str | None = None
+    session: Session,
+    event_id: uuid.UUID,
+    *,
+    content_ref: str | None = None,
+    cfl_service: CflService = default_cfl_service,
 ) -> ResearchReport:
     event = get_event(session, event_id)
     if event is None:
@@ -32,7 +37,11 @@ def publish_event_study_report(
         raise ValueError(f"event {event_id} has no valuation_event_window rows yet (M06)")
 
     tier = PublicationTier.MATERIAL_REVIEW
-    assert_publication_allowed(tier, CflStatus(event.cfl_status))
+    # Re-read cfl_status through G01 (raw SQL, always current) rather than
+    # trusting `event.cfl_status` as an ORM attribute — see
+    # company_event_report.py for the same fix and why.
+    gate_status = cfl_service.query_status(session, table="event", row_id=event_id)
+    assert_publication_allowed(tier, gate_status)
 
     report = create_report(
         session,

@@ -15,9 +15,9 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from governance.cfl import HIGH_MATERIALITY_THRESHOLD
+from governance.cfl import HIGH_MATERIALITY_THRESHOLD, CflService, default_cfl_service
 from governance.publication import PublicationTier, assert_publication_allowed
-from knowledge.db.base import CflStatus, RefEntityType, ReportType
+from knowledge.db.base import RefEntityType, ReportType
 from knowledge.db.models import Event, ResearchReport
 from knowledge.repository.event import get_event
 from knowledge.repository.research_report import create_report
@@ -32,13 +32,25 @@ def classify_event_report_tier(event: Event) -> PublicationTier:
 
 
 def publish_company_event_report(
-    session: Session, event_id: uuid.UUID, *, content_ref: str | None = None
+    session: Session,
+    event_id: uuid.UUID,
+    *,
+    content_ref: str | None = None,
+    cfl_service: CflService = default_cfl_service,
 ) -> ResearchReport:
     event = get_event(session, event_id)
     if event is None:
         raise LookupError(f"event {event_id} not found")
     tier = classify_event_report_tier(event)
-    gate_status = CflStatus(event.cfl_status) if tier is not PublicationTier.INTERNAL_AUTO else None
+    # Re-read cfl_status through G01 (raw SQL, always current) rather than
+    # trusting `event.cfl_status` as an ORM attribute — the ORM object may
+    # have been loaded before a CFL decision was written elsewhere in this
+    # session.
+    gate_status = (
+        cfl_service.query_status(session, table="event", row_id=event_id)
+        if tier is not PublicationTier.INTERNAL_AUTO
+        else None
+    )
     assert_publication_allowed(tier, gate_status)
 
     report = create_report(
