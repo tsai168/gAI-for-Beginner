@@ -60,6 +60,27 @@ def test_list_companies(client: TestClient, db_session) -> None:  # type: ignore
     assert "Alpha Co" in [c["company_name"] for c in resp.json()]
 
 
+def test_list_companies_search_by_name(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]
+    _company(db_session, company_name="Beacon Photonics")
+    _company(db_session, company_name="Zenith Semiconductor")
+    resp = client.get("/companies", params={"q": "photon"})
+    assert resp.status_code == 200
+    names = [c["company_name"] for c in resp.json()]
+    assert names == ["Beacon Photonics"]
+
+
+def test_list_companies_filter_by_cfl_status(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]
+    reviewed = _company(db_session, company_name="Needs Review Co", universe="Adjacent")
+    _company(db_session, company_name="Untouched Co")
+    RuleBasedCflService().submit_candidate(
+        db_session, table="company", row_id=reviewed.company_id, cfl_id=CflId.CFL_02
+    )
+    resp = client.get("/companies", params={"cfl_status": "REVIEW-REQUIRED"})
+    assert resp.status_code == 200
+    names = [c["company_name"] for c in resp.json()]
+    assert names == ["Needs Review Co"]
+
+
 def test_get_company_found(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]
     company = _company(db_session)
     resp = client.get(f"/companies/{company.company_id}")
@@ -81,6 +102,31 @@ def test_list_events(client: TestClient, db_session) -> None:  # type: ignore[no
     resp = client.get("/events", params={"pipeline_status": "DISCOVERED"})
     assert resp.status_code == 200
     assert str(ev.event_id) in [e["event_id"] for e in resp.json()]
+
+
+def test_list_events_filter_by_entity_id(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]
+    company = _company(db_session)
+    ev = _create_event(
+        db_session,
+        retrieved_at=RETRIEVED,
+        event_taxonomy_code="EV01",
+        entity_id=company.company_id,
+    )
+    _create_event(db_session, retrieved_at=RETRIEVED, event_taxonomy_code="EV02")
+    resp = client.get("/events", params={"entity_id": str(company.company_id)})
+    assert resp.status_code == 200
+    assert [e["event_id"] for e in resp.json()] == [str(ev.event_id)]
+
+
+def test_list_events_filter_by_cfl_status(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]
+    ev = _create_event(db_session, retrieved_at=RETRIEVED, event_taxonomy_code="EV01")
+    RuleBasedCflService().submit_candidate(
+        db_session, table="event", row_id=ev.event_id, cfl_id=CflId.CFL_07
+    )  # -> REVIEW-REQUIRED (CFL-07 never auto-passes)
+    _create_event(db_session, retrieved_at=RETRIEVED, event_taxonomy_code="EV02")
+    resp = client.get("/events", params={"cfl_status": "REVIEW-REQUIRED"})
+    assert resp.status_code == 200
+    assert [e["event_id"] for e in resp.json()] == [str(ev.event_id)]
 
 
 def test_get_event_found(client: TestClient, db_session) -> None:  # type: ignore[no-untyped-def]

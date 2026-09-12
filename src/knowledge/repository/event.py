@@ -73,8 +73,12 @@ def list_events(
     pipeline_status: str | None = None,
     min_materiality: float | None = None,
     correlation_id: uuid.UUID | None = None,
+    cfl_status: str | None = None,
+    entity_id: uuid.UUID | None = None,
 ) -> list[Event]:
-    """WBS-B9: backs GET /events' filters (Work-2 §4.2)."""
+    """WBS-B9: backs GET /events' filters (Work-2 §4.2). `cfl_status`/
+    `entity_id` (WBS-B10, U04 CFL queue / U03 company-scoped event list)
+    added on top, same widen-don't-break pattern as B9's own additions."""
     stmt = select(Event)
     if pipeline_status is not None:
         stmt = stmt.where(Event.pipeline_status == pipeline_status)
@@ -82,6 +86,10 @@ def list_events(
         stmt = stmt.where(Event.materiality_score >= min_materiality)
     if correlation_id is not None:
         stmt = stmt.where(Event.correlation_id == correlation_id)
+    if cfl_status is not None:
+        stmt = stmt.where(Event.cfl_status == cfl_status)
+    if entity_id is not None:
+        stmt = stmt.where(Event.entity_id == entity_id)
     return list(session.execute(stmt).scalars())
 
 

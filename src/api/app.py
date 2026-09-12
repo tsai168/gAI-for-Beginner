@@ -9,10 +9,12 @@ daily_pipeline.py`).
 
 from __future__ import annotations
 
+import os
 import uuid
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -43,6 +45,19 @@ from knowledge.repository.evidence import list_evidence_for_entity
 
 app = FastAPI(title="CPO AI API", version="0.1.0")
 
+# WBS-B10: the React frontend runs on its own origin (dev server or a
+# separate deployment). CORS stays OFF unless API_CORS_ORIGINS is set
+# (comma-separated) — never wildcard-open by default (CLAUDE.md §9).
+_cors_origins = [o.strip() for o in os.environ.get("API_CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 @app.exception_handler(ApiError)
 async def _handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
@@ -66,10 +81,16 @@ async def _handle_validation_error(request: Request, exc: RequestValidationError
 @app.get("/companies", response_model=list[CompanyOut])
 def list_companies_endpoint(
     universe: str | None = None,
+    q: str | None = None,
+    cfl_status: str | None = None,
     session: Session = Depends(get_session),
     _role: object = Depends(require(FunctionGroup.READ_SUMMARY)),
 ) -> list[CompanyOut]:
-    companies = list_companies_by_universe(session, universe)
+    """`q` (WBS-B10, U02 search) is a case-insensitive substring match on
+    `company_name`; `cfl_status` (U04 CFL queue) an exact match."""
+    companies = list_companies_by_universe(
+        session, universe, name_contains=q, cfl_status=cfl_status
+    )
     return [CompanyOut.model_validate(c) for c in companies]
 
 
@@ -99,14 +120,20 @@ def list_events_endpoint(
     pipeline_status: str | None = None,
     min_materiality: float | None = None,
     correlation_id: uuid.UUID | None = None,
+    cfl_status: str | None = None,
+    entity_id: uuid.UUID | None = None,
     session: Session = Depends(get_session),
     _role: object = Depends(require(FunctionGroup.READ_SUMMARY)),
 ) -> list[EventOut]:
+    """`cfl_status` (WBS-B10, U04 CFL queue) / `entity_id` (U03
+    company-scoped event list) added on top of B9's filters."""
     events = list_events(
         session,
         pipeline_status=pipeline_status,
         min_materiality=min_materiality,
         correlation_id=correlation_id,
+        cfl_status=cfl_status,
+        entity_id=entity_id,
     )
     return [EventOut.model_validate(e) for e in events]
 

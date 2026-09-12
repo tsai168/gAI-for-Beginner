@@ -10,6 +10,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: frontend (type + test + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Type check
+        run: npm run type-check
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
   check:
     name: lint + type + unit
     runs-on: ubuntu-latest
