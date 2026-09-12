@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from governance.cfl import CflId, CflService, default_cfl_service
@@ -33,6 +34,17 @@ def create_evidence(
 
 def get_evidence(session: Session, evidence_id: uuid.UUID) -> Evidence | None:
     return session.get(Evidence, evidence_id)
+
+
+def list_evidence_for_entity(
+    session: Session, *, entity_ref: uuid.UUID, entity_ref_type: str
+) -> list[Evidence]:
+    """WBS-B9: backs GET /companies/{id} etc.'s "含 Evidence/Citation"
+    detail — Traceability, Charter §22."""
+    stmt = select(Evidence).where(
+        Evidence.entity_ref == entity_ref, Evidence.entity_ref_type == entity_ref_type
+    )
+    return list(session.execute(stmt).scalars())
 
 
 def record_contradiction(

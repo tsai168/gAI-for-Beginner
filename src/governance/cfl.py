@@ -181,6 +181,18 @@ class CflService(Protocol):
 
     def query_status(self, session: Session, *, table: str, row_id: uuid.UUID) -> CflStatus: ...
 
+    def set_status(
+        self,
+        session: Session,
+        *,
+        table: str,
+        row_id: uuid.UUID,
+        target: CflStatus,
+        cfl_id: CflId,
+        agent_id: str | None = None,
+        correlation_id: uuid.UUID | None = None,
+    ) -> None: ...
+
 
 class RuleBasedCflService:
     """WBS-B8: the real AUTO-PASS/REVIEW-REQUIRED engine (module docstring

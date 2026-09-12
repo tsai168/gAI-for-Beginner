@@ -42,8 +42,13 @@ def get_company(session: Session, company_id: uuid.UUID) -> Company | None:
     return session.get(Company, company_id)
 
 
-def list_companies_by_universe(session: Session, universe: str) -> list[Company]:
-    return list(session.execute(select(Company).where(Company.universe == universe)).scalars())
+def list_companies_by_universe(session: Session, universe: str | None = None) -> list[Company]:
+    """`universe=None` (WBS-B9, GET /companies) lists every company,
+    unfiltered."""
+    stmt = select(Company)
+    if universe is not None:
+        stmt = stmt.where(Company.universe == universe)
+    return list(session.execute(stmt).scalars())
 
 
 def set_universe(

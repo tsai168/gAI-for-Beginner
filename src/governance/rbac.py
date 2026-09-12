@@ -1,4 +1,5 @@
-"""G05 — RBAC: agent roles and the GP-21 four-power model (WBS-B6, ADR-0017 §2).
+"""G05 — RBAC: agent roles and the GP-21 four-power model (WBS-B6, ADR-0017 §2)
++ the six Charter §5 human user roles (WBS-B9, ADR-0021, Work-2 §4.4).
 
 `AgentRole.power` is a single value, not a set — "one agent, one power" is
 enforced by the shape of the data. Each role also carries the *one*
@@ -7,6 +8,11 @@ power bucket, A07 and A08 do different mechanical jobs and must not be
 interchangeable even though neither holds a substantive research power).
 G02 (`governance.autonomy`) is the runtime enforcement gate that consumes
 this roster.
+
+`UserRole`/`FunctionGroup`/`USER_RBAC_MATRIX` are a separate table for the
+six human roles Work-2 §4.4 defines for the U05 API layer — transcribed
+verbatim from that section's matrix, not derived from the agent roster
+above (a human account and an agent account are governed independently).
 """
 
 from __future__ import annotations
@@ -115,3 +121,74 @@ def assert_gp21_roster_compliance(roster: dict[str, AgentRole] = AGENT_ROSTER) -
                 f"{role.agent_id}: action_kind {role.action_kind.value} is not valid "
                 f"for power {role.power.value}"
             )
+
+
+# --- Work-2 §4.4: six Charter §5 human user roles --------------------------
+
+
+class UserRole(enum.StrEnum):
+    """Charter §5."""
+
+    RESEARCH_DIRECTOR = "RESEARCH_DIRECTOR"
+    SEMICONDUCTOR_ANALYST = "SEMICONDUCTOR_ANALYST"
+    QUANT_RESEARCHER = "QUANT_RESEARCHER"
+    RESEARCH_REVIEWER = "RESEARCH_REVIEWER"
+    EXECUTIVE_USER = "EXECUTIVE_USER"
+    SYSTEM_ADMINISTRATOR = "SYSTEM_ADMINISTRATOR"
+
+
+class FunctionGroup(enum.StrEnum):
+    """Work-2 §4.4 RBAC matrix columns (讀／Evidence-實體寫／模型執行／審查佇列／
+    核准-發布／Ops-設定). READ_SUMMARY is Executive User's qualified "讀（摘要）"
+    — strictly weaker than READ, see `role_satisfies`."""
+
+    READ = "READ"
+    READ_SUMMARY = "READ_SUMMARY"
+    EVIDENCE_WRITE = "EVIDENCE_WRITE"
+    MODEL_EXEC = "MODEL_EXEC"
+    REVIEW_QUEUE = "REVIEW_QUEUE"
+    APPROVAL_PUBLISH = "APPROVAL_PUBLISH"
+    OPS_CONFIG = "OPS_CONFIG"
+
+
+# Work-2 §4.4 matrix, transcribed verbatim (✓ cells only).
+USER_RBAC_MATRIX: dict[UserRole, frozenset[FunctionGroup]] = {
+    UserRole.RESEARCH_DIRECTOR: frozenset(
+        {FunctionGroup.READ, FunctionGroup.REVIEW_QUEUE, FunctionGroup.APPROVAL_PUBLISH}
+    ),
+    UserRole.SEMICONDUCTOR_ANALYST: frozenset({FunctionGroup.READ, FunctionGroup.EVIDENCE_WRITE}),
+    UserRole.QUANT_RESEARCHER: frozenset({FunctionGroup.READ, FunctionGroup.MODEL_EXEC}),
+    UserRole.RESEARCH_REVIEWER: frozenset({FunctionGroup.READ, FunctionGroup.REVIEW_QUEUE}),
+    UserRole.EXECUTIVE_USER: frozenset({FunctionGroup.READ_SUMMARY}),
+    UserRole.SYSTEM_ADMINISTRATOR: frozenset({FunctionGroup.READ, FunctionGroup.OPS_CONFIG}),
+}
+
+_FORBIDDEN_USER_COMBINATION = (FunctionGroup.EVIDENCE_WRITE, FunctionGroup.APPROVAL_PUBLISH)
+
+
+class UserRbacViolation(ValueError):
+    """A human role would hold both Evidence/entity-write and
+    Approval/Publish — Work-2 §4.4 / GP-21 / CF-46 forbid this combination
+    for any single role, agent or human."""
+
+
+def assert_no_cross_power_role(
+    matrix: dict[UserRole, frozenset[FunctionGroup]] = USER_RBAC_MATRIX,
+) -> None:
+    write, approve = _FORBIDDEN_USER_COMBINATION
+    for role, groups in matrix.items():
+        if write in groups and approve in groups:
+            raise UserRbacViolation(
+                f"{role}: holds both {write.value} and {approve.value} (GP-21/CF-46)"
+            )
+
+
+def role_satisfies(role: UserRole, required: FunctionGroup) -> bool:
+    """A role holding full READ also satisfies a READ_SUMMARY requirement
+    (full access is a superset of summary access); the reverse does not
+    hold — Executive User's READ_SUMMARY never satisfies a plain READ
+    requirement (Charter §5: reads summaries only)."""
+    groups = USER_RBAC_MATRIX[role]
+    if required is FunctionGroup.READ_SUMMARY:
+        return FunctionGroup.READ_SUMMARY in groups or FunctionGroup.READ in groups
+    return required in groups

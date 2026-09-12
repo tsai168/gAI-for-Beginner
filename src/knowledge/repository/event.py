@@ -67,6 +67,24 @@ def get_event(session: Session, event_id: uuid.UUID) -> Event | None:
     return session.get(Event, event_id)
 
 
+def list_events(
+    session: Session,
+    *,
+    pipeline_status: str | None = None,
+    min_materiality: float | None = None,
+    correlation_id: uuid.UUID | None = None,
+) -> list[Event]:
+    """WBS-B9: backs GET /events' filters (Work-2 §4.2)."""
+    stmt = select(Event)
+    if pipeline_status is not None:
+        stmt = stmt.where(Event.pipeline_status == pipeline_status)
+    if min_materiality is not None:
+        stmt = stmt.where(Event.materiality_score >= min_materiality)
+    if correlation_id is not None:
+        stmt = stmt.where(Event.correlation_id == correlation_id)
+    return list(session.execute(stmt).scalars())
+
+
 def _require_head(event: Event) -> None:
     if event.lifecycle_status not in _HEAD_STATUSES:
         raise ValueError(
