@@ -11,6 +11,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from knowledge.db.models import CmiScore
@@ -156,3 +157,14 @@ def correct_cmi_score(
         model_version_id=model_version_id,
         valid_from=valid_from,
     )
+
+
+def current_cmi_score(session: Session, company_id: uuid.UUID) -> CmiScore | None:
+    """WBS-B11 (R03 dashboard): the current Bitemporal version."""
+    stmt = select(CmiScore).where(CmiScore.company_id == company_id, CmiScore.valid_to.is_(None))
+    return session.execute(stmt).scalar_one_or_none()
+
+
+def list_current_cmi_scores(session: Session) -> list[CmiScore]:
+    stmt = select(CmiScore).where(CmiScore.valid_to.is_(None))
+    return list(session.execute(stmt).scalars())

@@ -13,6 +13,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from knowledge.db.models import SecoScore
@@ -135,3 +136,16 @@ def correct_seco_score(
         model_version_id=model_version_id,
         valid_from=valid_from,
     )
+
+
+def current_seco_score(session: Session, company_id: uuid.UUID) -> SecoScore | None:
+    """WBS-B11 (R03 dashboard): the current Bitemporal version — `valid_to
+    IS NULL` (CF-16/17), same convention as `technology.py`'s
+    `current_technology_versions`."""
+    stmt = select(SecoScore).where(SecoScore.company_id == company_id, SecoScore.valid_to.is_(None))
+    return session.execute(stmt).scalar_one_or_none()
+
+
+def list_current_seco_scores(session: Session) -> list[SecoScore]:
+    stmt = select(SecoScore).where(SecoScore.valid_to.is_(None))
+    return list(session.execute(stmt).scalars())

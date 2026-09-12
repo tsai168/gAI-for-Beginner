@@ -32,7 +32,7 @@ governed row already carries so no caller needs to change:
 - CFL-07/08 — Charter: must never AUTO-PASS (``NO_AUTO_PASS``); always
   REVIEW-REQUIRED.
 
-_HIGH_CONFIDENCE_THRESHOLD / _HIGH_MATERIALITY_THRESHOLD are V1 Expert-Rule
+HIGH_CONFIDENCE_THRESHOLD / HIGH_MATERIALITY_THRESHOLD are V1 Expert-Rule
 defaults (like M02/M05's own weights) — adjustable via ADR, not a Frozen
 Decision.
 
@@ -88,8 +88,8 @@ NO_AUTO_PASS: frozenset[CflId] = frozenset({CflId.CFL_07, CflId.CFL_08})
 _GUC = "cpoai.cfl_engine"
 
 # V1 Expert-Rule defaults — adjustable via ADR, never a Frozen Decision.
-_HIGH_CONFIDENCE_THRESHOLD = 0.85  # CFL-01
-_HIGH_MATERIALITY_THRESHOLD = 70.0  # CFL-04, 0..100 scale (CF-27)
+HIGH_CONFIDENCE_THRESHOLD = 0.85  # CFL-01
+HIGH_MATERIALITY_THRESHOLD = 70.0  # CFL-04, 0..100 scale (CF-27)
 
 
 def is_valid_transition(current: CflStatus, target: CflStatus) -> bool:
@@ -124,7 +124,7 @@ def _decide_cfl_01(session: Session, row_id: uuid.UUID) -> CflStatus:
     )
     if (
         confidence is not None
-        and float(confidence) >= _HIGH_CONFIDENCE_THRESHOLD  # type: ignore[arg-type]
+        and float(confidence) >= HIGH_CONFIDENCE_THRESHOLD  # type: ignore[arg-type]
         and stock_code is not None
     ):
         return CflStatus.AUTO_PASS
@@ -142,7 +142,7 @@ def _decide_cfl_04(session: Session, row_id: uuid.UUID) -> CflStatus:
     (score,) = _fetch_one(
         session, "SELECT materiality_score FROM event WHERE event_id = :id", row_id
     )
-    if score is not None and float(score) >= _HIGH_MATERIALITY_THRESHOLD:  # type: ignore[arg-type]
+    if score is not None and float(score) >= HIGH_MATERIALITY_THRESHOLD:  # type: ignore[arg-type]
         return CflStatus.REVIEW_REQUIRED
     return CflStatus.AUTO_PASS
 

@@ -176,6 +176,29 @@ class BenchmarkModel(enum.StrEnum):
     MARKET_MODEL = "MARKET_MODEL"
 
 
+class PublicationTier(enum.StrEnum):
+    """Charter §18's three publication tiers (WBS-B8/B11, ADR-0020/ADR-0023).
+    Lives here (not governance.publication) because it's also a DB column
+    on `research_report`, same reasoning as CflStatus/PipelineStatus."""
+
+    INTERNAL_AUTO = "INTERNAL_AUTO"
+    MATERIAL_REVIEW = "MATERIAL_REVIEW"
+    EXTERNAL_APPROVAL = "EXTERNAL_APPROVAL"
+
+
+class ReportType(enum.StrEnum):
+    """Work-1 §3.7 R01/R02/R04/R05/R06 (WBS-B11, ADR-0023). R03 (Seco/CMI
+    dashboard data) is live-queried, never persisted as a report row — see
+    ADR-0023 §1. Values are a V1 implementation choice (Work-2 doesn't fix
+    exact strings), not a Frozen Decision."""
+
+    DAILY_DIGEST = "DAILY_DIGEST"  # R01
+    COMPANY_EVENT_REPORT = "COMPANY_EVENT_REPORT"  # R02
+    EVENT_STUDY = "EVENT_STUDY"  # R04
+    COMPARISON = "COMPARISON"  # R05
+    EXTERNAL_PUBLICATION = "EXTERNAL_PUBLICATION"  # R06
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> Enum:
     """varchar + CHECK (native_enum=False), per ADR-0007 §2."""
     return Enum(

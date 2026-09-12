@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ingestion.trading_calendar import TradingCalendar, trading_days_around
@@ -105,3 +106,9 @@ def record_valuation_event_window(
     session.add(row)
     session.flush()
     return row
+
+
+def list_event_windows(session: Session, event_id: uuid.UUID) -> list[ValuationEventWindow]:
+    """WBS-B11 (R04 event-study report)."""
+    stmt = select(ValuationEventWindow).where(ValuationEventWindow.event_id == event_id)
+    return list(session.execute(stmt).scalars())

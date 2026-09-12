@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -65,3 +66,21 @@ def list_decisions_for_row(
             .order_by(AuditLogEntry.created_at)
         ).scalars()
     )
+
+
+def list_decisions_since(
+    session: Session,
+    *,
+    since: datetime,
+    until: datetime | None = None,
+    rule_ref: str | None = None,
+) -> list[AuditLogEntry]:
+    """WBS-B11 (R01 daily digest): decisions in a time window, oldest
+    first."""
+    stmt = select(AuditLogEntry).where(AuditLogEntry.created_at >= since)
+    if until is not None:
+        stmt = stmt.where(AuditLogEntry.created_at < until)
+    if rule_ref is not None:
+        stmt = stmt.where(AuditLogEntry.rule_ref == rule_ref)
+    stmt = stmt.order_by(AuditLogEntry.created_at)
+    return list(session.execute(stmt).scalars())

@@ -47,10 +47,12 @@ from knowledge.db.base import (
     ModelVersionStatus,
     ObservedTimeMixin,
     PipelineStatus,
+    PublicationTier,
     RefEntityType,
     RelationshipEndType,
     RelationshipStatus,
     RelationshipType,
+    ReportType,
     SourceTier,
     TaxonomyCategory,
     Universe,
@@ -577,7 +579,50 @@ class ValuationEventWindow(AuditMixin, Base):
     )
 
 
-CFL_GOVERNED_TABLES: tuple[str, ...] = ("company", "relationship", "event", "evidence")
+class ResearchReport(GovernedMixin, AuditMixin, Base):
+    """R01-R06 (WBS-B11, ADR-0023 G-1 — not part of Work-2 §2/§2.9's frozen
+    schema either, same gap-filling posture as `audit_log`, ADR-0003).
+
+    `cfl_status` (from GovernedMixin) is only meaningfully driven by G01
+    for report_type COMPARISON (CFL-06) and EXTERNAL_PUBLICATION (CFL-08)
+    — the two report types Work-2 §5 CFL_CONTRACT actually names. Other
+    report types are gated by their *subject*'s own governance state
+    instead of inventing a new CFL id (ADR-0023 §2).
+
+    `content_ref` stays a bare pointer (no I02 object-storage client exists
+    in this codebase — same deferred-hook posture as
+    `source_snapshot.snapshot_ref`, ADR-0003 §4 "OPEN — B11 前定" resolved
+    here as "not resolved yet, still a hook"). Report content is computed
+    live from the underlying tables at read time, not pre-rendered.
+    """
+
+    __tablename__ = "research_report"
+
+    research_report_id: Mapped[uuid.UUID] = _uuid_pk("research_report_id")
+    report_type: Mapped[str] = mapped_column(pg_enum(ReportType, "report_type"), nullable=False)
+    subject_ref: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    subject_ref_type: Mapped[str | None] = mapped_column(
+        pg_enum(RefEntityType, "ref_entity_type_report"), nullable=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+    publication_tier: Mapped[str] = mapped_column(
+        pg_enum(PublicationTier, "publication_tier"), nullable=False
+    )
+    content_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_research_report_subject_ref", "subject_ref"),
+        Index("ix_research_report_report_type", "report_type"),
+    )
+
+
+CFL_GOVERNED_TABLES: tuple[str, ...] = (
+    "company",
+    "relationship",
+    "event",
+    "evidence",
+    "research_report",
+)
 APPEND_ONLY_TABLES: tuple[str, ...] = ("source_snapshot", "audit_log")
 
 # Cross-module FKs created in migration 0002 (both ends already exist by then).

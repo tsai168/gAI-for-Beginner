@@ -2,11 +2,11 @@
 
 Charter §18 fixes three publication tiers — Internal Auto／Material
 Review／External Approval — and names, verbatim, which content kinds fall
-into each. `research_report` (R02, WBS-B11) will carry a
+into each. `research_report` (R01-R06, WBS-B11, ADR-0023) carries a
 `publication_tier`/`cfl_status` pair per ADR-0003 G-1; this module supplies
-the tier classification and the CFL gate now so K05's pipeline_status
-advance (`knowledge.repository.event.advance_pipeline_status`, also B8)
-and R06 (later, B11) share one implementation instead of duplicating it.
+the tier classification and the CFL gate so K05's pipeline_status advance
+(`knowledge.repository.event.advance_pipeline_status`, B8) and `src.reports`
+(B11) share one implementation instead of duplicating it.
 
 Only External Approval is gated by CFL-08 specifically; Material Review
 content is already gated by whichever CFL governs *that* content (CFL-02
@@ -14,19 +14,27 @@ Core upgrade, CFL-05 Confirmed customer, ...) — this module doesn't
 re-encode that mapping (Work-2 §5 CFL_CONTRACT already owns it), it just
 asks the caller for the resulting `cfl_status` and enforces APPROVED before
 anything beyond Internal Auto proceeds.
+
+`PublicationTier` itself lives in `knowledge.db.base` (WBS-B11) — it's also
+a DB column on `research_report`, same reasoning as `CflStatus`. Re-exported
+here so existing callers (`knowledge.repository.event`, this module's own
+tests) don't need to change their import.
 """
 
 from __future__ import annotations
 
 import enum
 
-from knowledge.db.base import CflStatus
+from knowledge.db.base import CflStatus, PublicationTier
 
-
-class PublicationTier(enum.StrEnum):
-    INTERNAL_AUTO = "INTERNAL_AUTO"
-    MATERIAL_REVIEW = "MATERIAL_REVIEW"
-    EXTERNAL_APPROVAL = "EXTERNAL_APPROVAL"
+__all__ = [
+    "PublicationTier",
+    "PublicationContentKind",
+    "classify_publication_tier",
+    "requires_cfl_gate",
+    "PublicationBlocked",
+    "assert_publication_allowed",
+]
 
 
 class PublicationContentKind(enum.StrEnum):

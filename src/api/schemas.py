@@ -66,3 +66,52 @@ class CflDecisionResponse(BaseModel):
     table: str
     row_id: uuid.UUID
     cfl_status: str
+
+
+class ResearchReportOut(BaseModel):
+    """R01-R06 (WBS-B11). `content_ref` is a hook, usually null in V1 — see
+    `knowledge.db.models.ResearchReport` docstring."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    research_report_id: uuid.UUID
+    report_type: str
+    subject_ref: uuid.UUID | None
+    subject_ref_type: str | None
+    version: int
+    publication_tier: str
+    cfl_status: str
+    content_ref: str | None
+    confidence: float | None
+    model_version_id: uuid.UUID | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CompanyScoreSummaryOut(BaseModel):
+    """R03 dashboard data — live, never persisted."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    company_id: uuid.UUID
+    company_name: str
+    seco_score: float | None
+    cmi_score: float | None
+
+
+class ValuationEventWindowOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    valuation_event_window_id: uuid.UUID
+    event_id: uuid.UUID
+    window_pre: int
+    window_post: int
+    benchmark_model: str
+    car: float
+    market_cap: float | None
+
+
+class EventStudyOut(BaseModel):
+    event_id: uuid.UUID
+    windows: list[ValuationEventWindowOut]
+    report: ResearchReportOut | None

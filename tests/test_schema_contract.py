@@ -289,6 +289,21 @@ CONTRACT_COLUMNS: dict[str, set[str]] = {
         "correlation_id",
         "created_at",
     },
+    # --- WBS-B11 (ADR-0023 — research_report, ADR-0003 G-1) ---
+    "research_report": {
+        "research_report_id",
+        "report_type",
+        "subject_ref",
+        "subject_ref_type",
+        "version",
+        "publication_tier",
+        "cfl_status",
+        "confidence",
+        "model_version_id",
+        "content_ref",
+        "created_at",
+        "updated_at",
+    },
 }
 
 EXPECTED_TABLES = set(CONTRACT_COLUMNS) | {"company_taxonomy"}

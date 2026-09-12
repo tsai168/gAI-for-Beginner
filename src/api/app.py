@@ -1,10 +1,8 @@
-"""U05 — API layer (WBS-B9, ADR-0021, Work-2 §4.2).
+"""U05 — API layer (WBS-B9/B11, ADR-0021/ADR-0023, Work-2 §4.2).
 
-Endpoints backed by modules that already exist (K01 Company, K05 Event,
-G01 CFL decision) are real. Endpoints attributed to R01-R06 (Reporting,
-WBS-B11) or R05 (Comparison, not built) return 501 `NotImplementedYetError`
-— never fake data (same posture as `agents/roster.py`, `workflows/
-daily_pipeline.py`).
+All 11 endpoints are real as of WBS-B11. `GET /exports` alone stays 501
+— export FORMAT design (U05's own remaining scope) never had a module to
+wire it to, unlike R01-R06 which now do.
 """
 
 from __future__ import annotations
@@ -32,16 +30,25 @@ from api.schemas import (
     CflDecisionResponse,
     CompanyDetailOut,
     CompanyOut,
+    CompanyScoreSummaryOut,
     EventDetailOut,
     EventOut,
+    EventStudyOut,
+    ResearchReportOut,
+    ValuationEventWindowOut,
 )
 from governance.cfl import NO_AUTO_PASS, CflId, default_cfl_service
+from governance.publication import PublicationBlocked
 from governance.rbac import FunctionGroup
-from knowledge.db.base import CflStatus, RefEntityType
+from knowledge.db.base import CflStatus, RefEntityType, ReportType
 from knowledge.db.models import CFL_GOVERNED_TABLES
 from knowledge.repository.company import get_company, list_companies_by_universe
 from knowledge.repository.event import get_event, list_events, list_revision_chain
 from knowledge.repository.evidence import list_evidence_for_entity
+from knowledge.repository.research_report import get_report, list_reports
+from models.event_window import list_event_windows
+from reports.dashboard import get_seco_cmi_dashboard
+from reports.external_publication import approve_external_publication
 
 app = FastAPI(title="CPO AI API", version="0.1.0")
 
@@ -202,49 +209,76 @@ def decide_cfl_endpoint(
     return CflDecisionResponse(table=body.table, row_id=body.row_id, cfl_status=parsed_target.value)
 
 
-# --- R01-R06 (WBS-B11, not built yet) -----------------------------------------
+# --- R01-R06 (WBS-B11, ADR-0023) ----------------------------------------------
 
 
-@app.get("/dashboard/seco-cmi")
+@app.get("/dashboard/seco-cmi", response_model=list[CompanyScoreSummaryOut])
 def dashboard_seco_cmi_endpoint(
+    session: Session = Depends(get_session),
     _role: object = Depends(require(FunctionGroup.READ_SUMMARY)),
-) -> None:
-    raise NotBuiltYet("R03", "R03 dashboard aggregation is not built yet (WBS-B11)")
+) -> list[CompanyScoreSummaryOut]:
+    return [CompanyScoreSummaryOut.model_validate(s) for s in get_seco_cmi_dashboard(session)]
 
 
-@app.get("/reports/{report_id}")
+@app.get("/reports/{report_id}", response_model=ResearchReportOut)
 def get_report_endpoint(
-    report_id: uuid.UUID, _role: object = Depends(require(FunctionGroup.READ))
-) -> None:
-    raise NotBuiltYet("R02", "research_report (R02) is not built yet (WBS-B11)")
+    report_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _role: object = Depends(require(FunctionGroup.READ)),
+) -> ResearchReportOut:
+    report = get_report(session, report_id)
+    if report is None:
+        raise NotFoundError("R02", f"research_report {report_id} not found")
+    return ResearchReportOut.model_validate(report)
 
 
-@app.get("/event-studies/{event_id}")
+@app.get("/event-studies/{event_id}", response_model=EventStudyOut)
 def get_event_study_endpoint(
-    event_id: uuid.UUID, _role: object = Depends(require(FunctionGroup.READ))
-) -> None:
-    raise NotBuiltYet("R04", "R04 event-study report is not built yet (WBS-B11)")
+    event_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _role: object = Depends(require(FunctionGroup.READ)),
+) -> EventStudyOut:
+    event = get_event(session, event_id)
+    if event is None:
+        raise NotFoundError("R04", f"event {event_id} not found")
+    windows = list_event_windows(session, event_id)
+    reports = list_reports(session, report_type=ReportType.EVENT_STUDY.value, subject_ref=event_id)
+    return EventStudyOut(
+        event_id=event_id,
+        windows=[ValuationEventWindowOut.model_validate(w) for w in windows],
+        report=ResearchReportOut.model_validate(reports[0]) if reports else None,
+    )
 
 
-@app.get("/comparisons/{comparison_id}")
+@app.get("/comparisons/{comparison_id}", response_model=ResearchReportOut)
 def get_comparison_endpoint(
-    comparison_id: uuid.UUID, _role: object = Depends(require(FunctionGroup.READ))
-) -> None:
-    raise NotBuiltYet("R05", "R05 comparison analysis is not built yet (WBS-B11)")
+    comparison_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _role: object = Depends(require(FunctionGroup.READ)),
+) -> ResearchReportOut:
+    report = get_report(session, comparison_id)
+    if report is None or report.report_type != ReportType.COMPARISON.value:
+        raise NotFoundError("R05", f"comparison report {comparison_id} not found")
+    return ResearchReportOut.model_validate(report)
 
 
-@app.post("/publications/{publication_id}/approve")
+@app.post("/publications/{publication_id}/approve", response_model=ResearchReportOut)
 def approve_publication_endpoint(
     publication_id: uuid.UUID,
+    session: Session = Depends(get_session),
     _role: object = Depends(require(FunctionGroup.APPROVAL_PUBLISH)),
-) -> None:
-    raise NotBuiltYet(
-        "R06",
-        "research_report / publish flow (R06) is not built yet (WBS-B11); "
-        "governance.publication's CFL-08 gate is ready for when it is",
-    )
+) -> ResearchReportOut:
+    try:
+        report = approve_external_publication(session, publication_id)
+    except LookupError as exc:
+        raise NotFoundError("R06", str(exc)) from exc
+    except PublicationBlocked as exc:
+        raise BadRequestError("G06", str(exc)) from exc
+    except ValueError as exc:
+        raise BadRequestError("G01", str(exc)) from exc
+    return ResearchReportOut.model_validate(report)
 
 
 @app.get("/exports")
 def exports_endpoint(_role: object = Depends(require(FunctionGroup.READ))) -> None:
-    raise NotBuiltYet("U05", "export formats depend on R01-R06 (WBS-B11)")
+    raise NotBuiltYet("U05", "export format design is not built yet (WBS-B11 follow-up)")
