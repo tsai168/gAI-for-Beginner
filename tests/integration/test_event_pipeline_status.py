@@ -23,8 +23,9 @@ def _event(db_session):  # type: ignore[no-untyped-def]
 
 
 def _walk_to(db_session, event, target_stage: str):  # type: ignore[no-untyped-def]
+    # `event` already starts at DISCOVERED (create_event's server default) —
+    # advancing *to* DISCOVERED would itself be an illegal self-transition.
     stages = (
-        "DISCOVERED",
         "FETCHED",
         "NORMALIZED",
         "EXTRACTED",
