@@ -1,232 +1,248 @@
-from enum import Enum, StrEnum
-from typing import Any
-from sqlalchemy import Column, DateTime, Enum as SQLEnum, Integer, String
-from sqlalchemy.orm import declarative_base
+"""Declarative Base, shared column mixins and Charter-frozen enumerations.
 
-# 1. 建立最純淨、標準的基底，完全不干擾 SQLAlchemy 內部 metadata 註冊
-Base: Any = declarative_base()
-Base.metadata.naming_convention = {
+Enum *values* are transcribed verbatim from the Charter / Work-2 and MUST NOT
+be renamed (CLAUDE.md §6). Representation = varchar + CHECK (ADR-0007 §2).
+"""
+
+from __future__ import annotations
+
+import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum, MetaData, Numeric, func, text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql.elements import TextClause
+
+# Deterministic constraint/index names -> clean Alembic diffs.
+NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"
+    "pk": "pk_%(table_name)s",
 }
 
 
-# 2. 靜態提供所有測試框架與業務所需要的標準列舉（Enums），絕不通靈攔截
-class PipelineStatus(StrEnum):
-    DISCOVERED = "DISCOVERED"
-    RUNNING = "RUNNING"
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
+class Base(DeclarativeBase):
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
-class RelationshipStatus(StrEnum):
-    CANDIDATE = "CANDIDATE"
-    ACTIVE = "ACTIVE"
-    ARCHIVED = "ARCHIVED"
+# --- Charter / Work-2 frozen enumerations -------------------------------------
 
 
-class CflStatus(StrEnum):
+class CflStatus(enum.StrEnum):
     PENDING = "PENDING"
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
-    AUTO_PASS = "AUTO_PASS"
-    REVIEW_REQUIRED = "REVIEW_REQUIRED"
-    BLOCKED = "BLOCKED"
+    AUTO_PASS = "AUTO-PASS"
+    REVIEW_REQUIRED = "REVIEW-REQUIRED"
     APPROVED = "APPROVED"
-    SUPERSEDED = "SUPERSEDED"
     REJECTED = "REJECTED"
+    BLOCKED = "BLOCKED"
+    SUPERSEDED = "SUPERSEDED"
 
 
-class ModelVersionStatus(StrEnum):
-    DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE"
-    ARCHIVED = "ARCHIVED"
-
-
-class TaxonomyCategory(StrEnum):
-    MARKET = "MARKET"
-    MACRO = "MACRO"
-    COMPANY = "COMPANY"
-    FINANCIAL = "FINANCIAL"
-    GENERIC = "GENERIC"
-
-
-class TaxonomyGroup(StrEnum):
-    STOCK = "STOCK"
-    CRYPTO = "CRYPTO"
-    FX = "FX"
-    GENERIC = "GENERIC"
-
-
-class SourceTier(StrEnum):
-    TIER_1 = "TIER_1"
-    TIER_2 = "TIER_2"
-    TIER_3 = "TIER_3"
-    PRIMARY = "PRIMARY"
-    SECONDARY = "SECONDARY"
-    GENERIC = "GENERIC"
-
-
-class RelationshipType(StrEnum):
-    ASSOCIATE = "ASSOCIATE"
-    COMPETITOR = "COMPETITOR"
-    SUBSIDIARY = "SUBSIDIARY"
-    GENERIC = "GENERIC"
-
-
-class RelationshipEndType(StrEnum):
-    SOURCE = "SOURCE"
-    TARGET = "TARGET"
-    SUBJECT = "SUBJECT"
-    OBJECT = "OBJECT"
-    GENERIC = "GENERIC"
-
-
-class RelationshipDirection(StrEnum):
-    FORWARD = "FORWARD"
-    BACKWARD = "BACKWARD"
-    BIDIRECTIONAL = "BIDIRECTIONAL"
-    UNDIRECTED = "UNDIRECTED"
-
-
-class SourceKind(StrEnum):
-    OFFICIAL = "OFFICIAL"
-    NEWS = "NEWS"
-    SOCIAL = "SOCIAL"
-    GENERIC = "GENERIC"
-
-
-class SourceType(StrEnum):
-    RAW = "RAW"
-    DERIVED = "DERIVED"
+class PipelineStatus(enum.StrEnum):
+    DISCOVERED = "DISCOVERED"
+    FETCHED = "FETCHED"
+    NORMALIZED = "NORMALIZED"
     EXTRACTED = "EXTRACTED"
-    GENERIC = "GENERIC"
-
-
-class RefEntityType(StrEnum):
-    ORGANIZATION = "ORGANIZATION"
-    PERSON = "PERSON"
-    PRODUCT = "PRODUCT"
-    GENERIC = "GENERIC"
-
-
-class RefRelationType(StrEnum):
-    OWNERSHIP = "OWNERSHIP"
-    AFFILIATION = "AFFILIATION"
-    GENERIC = "GENERIC"
-
-
-class RefSourceType(StrEnum):
-    DATABASE = "DATABASE"
-    API = "API"
-    FILE = "FILE"
-    GENERIC = "GENERIC"
-
-
-class ModelKind(StrEnum):
-    CLASSIFICATION = "CLASSIFICATION"
-    REGRESSION = "REGRESSION"
-    LLM = "LLM"
-    GENERIC = "GENERIC"
-
-
-class MetricKind(StrEnum):
-    ACCURACY = "ACCURACY"
-    LOSS = "LOSS"
-    F1 = "F1"
-    GENERIC = "GENERIC"
-
-
-class ListingMarket(StrEnum):
-    TWSE = "TWSE"
-    TPEx = "TPEx"
-    NYSE = "NYSE"
-    NASDAQ = "NASDAQ"
-    GENERIC = "GENERIC"
-
-
-class EntityType(StrEnum):
-    COMPANY = "COMPANY"
-    INDIVIDUAL = "INDIVIDUAL"
-    INSTITUTION = "INSTITUTION"
-    GENERIC = "GENERIC"
-
-
-class IndustryCode(StrEnum):
-    SEMICONDUCTOR = "SEMICONDUCTOR"
-    FINANCIAL = "FINANCIAL"
-    ELECTRONICS = "ELECTRONICS"
-    GENERIC = "GENERIC"
-
-
-class InvestorType(StrEnum):
-    RETAIL = "RETAIL"
-    INSTITUTIONAL = "INSTITUTIONAL"
-    INSIDER = "INSIDER"
-
-
-class EvidenceType(StrEnum):
-    NEWS = "NEWS"
-    FILING = "FILING"
-    PRICE = "PRICE"
-    GENERIC = "GENERIC"
-
-
-class EvidenceStage(StrEnum):
-    COLLECTED = "COLLECTED"
-    PROCESSED = "PROCESSED"
+    VERIFIED = "VERIFIED"
     ANALYZED = "ANALYZED"
+    APPROVED = "APPROVED"
+    PUBLISHED = "PUBLISHED"
 
 
-class EventTaxonomyCode(StrEnum):
-    GENERIC = "GENERIC"
-    FINANCIAL = "FINANCIAL"
-    MARKET = "MARKET"
+class EventLifecycleStatus(enum.StrEnum):
+    ACTIVE = "ACTIVE"
+    CORRECTED = "CORRECTED"
+    SUPERSEDED = "SUPERSEDED"
+    WITHDRAWN = "WITHDRAWN"
+    DISPUTED = "DISPUTED"
 
 
-class EventLifecycleStatus(StrEnum):
+class EvidenceStage(enum.StrEnum):
+    E0 = "E0"
+    E1 = "E1"
+    E2 = "E2"
+    E3 = "E3"
+    E4 = "E4"
+    E5 = "E5"
+    E6 = "E6"
+
+
+class SourceTier(enum.StrEnum):
+    S1 = "S1"
+    S2 = "S2"
+    S3 = "S3"
+    S4 = "S4"
+    S5 = "S5"
+
+
+class EvidenceType(enum.StrEnum):
+    SUPPORT = "SUPPORT"
+    CONTRADICT = "CONTRADICT"
+    NEUTRAL_CONTEXT = "NEUTRAL-CONTEXT"
+
+
+class EventTaxonomyCode(enum.StrEnum):
+    EV01 = "EV01"
+    EV02 = "EV02"
+    EV03 = "EV03"
+    EV04 = "EV04"
+    EV05 = "EV05"
+    EV06 = "EV06"
+    EV07 = "EV07"
+    EV08 = "EV08"
+    EV09 = "EV09"
+    EV10 = "EV10"
+    EV11 = "EV11"
+    EV12 = "EV12"
+
+
+class Universe(enum.StrEnum):
+    CORE = "Core"
+    ADJACENT = "Adjacent"
+    WATCHLIST = "Watchlist"
+
+
+class ListingMarket(enum.StrEnum):
+    LISTED = "LISTED"  # 上市 (TWSE)
+    OTC = "OTC"  # 上櫃 (TPEx)
+    EMERGING = "EMERGING"  # 興櫃
+
+
+class TaxonomyCategory(enum.StrEnum):
+    CPO = "CPO"
+    OPTICAL_IO = "Optical I/O"
+    ELSFP = "ELSFP"
+    PLUGGABLE_OPTICS = "Pluggable Optics"
+
+
+class RelationshipType(enum.StrEnum):
+    CUSTOMER = "CUSTOMER"
+    SUPPLIER = "SUPPLIER"
+    PARTNER = "PARTNER"
+    COMPETITOR = "COMPETITOR"
+
+
+class RelationshipStatus(enum.StrEnum):
+    CANDIDATE = "CANDIDATE"
+    CONFIRMED = "CONFIRMED"
+
+
+class RefEntityType(enum.StrEnum):
+    COMPANY = "company"
+    PERSON = "person"
+    PRODUCT = "product"
+    TECHNOLOGY = "technology"
+    RELATIONSHIP = "relationship"
+    EVENT = "event"
+
+
+class RelationshipEndType(enum.StrEnum):
+    """K04 relationship endpoints — {company, person} only (ADR-0005 G4-2)."""
+
+    COMPANY = "company"
+    PERSON = "person"
+
+
+class InvestorType(enum.StrEnum):
+    FOREIGN = "FOREIGN"  # 外資 (C1)
+    INVESTMENT_TRUST = "INVESTMENT_TRUST"  # 投信 (C2)
+    DEALER = "DEALER"  # 自營商
+
+
+class ModelKind(enum.StrEnum):
+    SECO = "seco"
+    CMI = "cmi"
+    MATERIALITY = "materiality"
+    CONFIDENCE = "confidence"
+    BENCHMARK = "benchmark"
+    TAXONOMY = "taxonomy"
+    CFL = "cfl"
+
+
+class ModelVersionStatus(enum.StrEnum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE"
-    ARCHIVED = "ARCHIVED"
+    SUPERSEDED = "SUPERSEDED"
 
 
-# 3. 提供標準的資料庫自訂輔助函數
-def pg_enum(*args: Any, **kwargs: Any) -> Any:
-    if args and isinstance(args, type) and issubclass(args, Enum):
-        return SQLEnum(args)
-    name_val = kwargs.get("name", "dynamic_enum")
-    return SQLEnum(name=name_val)
+def pg_enum(py_enum: type[enum.Enum], name: str) -> Enum:
+    """varchar + CHECK (native_enum=False), per ADR-0007 §2."""
+    return Enum(
+        py_enum,
+        name=name,
+        native_enum=False,
+        create_constraint=True,
+        values_callable=lambda e: [m.value for m in e],
+    )
 
 
-def enum_default(*args: Any, **kwargs: Any) -> Any:
-    if args:
-        first_arg = args
-        if hasattr(first_arg, "value"):
-            return first_arg.value
-        return str(first_arg)
-    return None
+def enum_default(member: enum.Enum) -> TextClause:
+    """server_default for a non-native enum column: a quoted SQL literal."""
+    return text(f"'{member.value}'")
 
 
-# 4. 提供標準空殼 Mixins
-class AuditMixin: pass
-class ObservedTimeMixin: pass
-class BitemporalMixin: pass
-class CflStatusMixin: pass
-class GovernedMixin: pass
-class TargetEntityMixin: pass
-class CampaignExecutionMixin: pass
-class ReportGenerationMixin: pass
+# --- shared column mixins ----------------------------------------------------
+
+_CONF = Numeric(5, 4)  # 0..1
 
 
-# 5. 萬能保險：如果專案內有任何邊緣模組來引進任何未知的類別名稱，
-# 自動吐出一個空物件，確保測試搜集檔案階段（Collection）100% 絕對不崩潰
-def __getattr__(name: str) -> Any:
-    if name == "Enum":
-        return Enum
-    return type(name, (object,), {})
+def _uuid_pk(col_name: str) -> Mapped[uuid.UUID]:
+    return mapped_column(
+        col_name,
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
 
 
+class AuditMixin:
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
+
+class BitemporalMixin:
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CflStatusMixin:
+    """cfl_status is written only via G01 (governance.cfl); a DB trigger
+    (migration 0001) blocks direct updates. See ADR-0004 / ADR-0007 §6."""
+
+    cfl_status: Mapped[str] = mapped_column(
+        pg_enum(CflStatus, "cfl_status"),
+        nullable=False,
+        server_default=text(f"'{CflStatus.PENDING.value}'"),
+    )
+
+
+class GovernedMixin(CflStatusMixin):
+    """CflStatusMixin + the confidence / model-version columns (Work-2 §2.1)."""
+
+    confidence: Mapped[float | None] = mapped_column(_CONF, nullable=True)
+    model_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+class ObservedTimeMixin:
+    """Charter §14.4 / CF-21 / CF-21A. Missing values stay NULL (GP-07);
+    only retrieved_at is Required."""
+
+    occurred_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    market_known_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    available_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    event_trading_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    time_basis: Mapped[str | None] = mapped_column(nullable=True)
+    time_precision: Mapped[str | None] = mapped_column(nullable=True)
+    time_confidence: Mapped[float | None] = mapped_column(_CONF, nullable=True)

@@ -21,13 +21,11 @@ jobs:
           python-version: "3.12"
       - run: uv sync
       - name: Lint
-        run: |
-          uv run ruff format .
-          uv run ruff check . --fix
+        run: uv run ruff check . && uv run ruff format --check .
       - name: Type check
-        run: uv run mypy .
+        run: uv run mypy src
       - name: Unit tests
-        run: PYTHONPATH=. uv run pytest -m "not integration and not migration"
+        run: uv run pytest -m "not integration and not migration"
 
   migration:
     name: alembic round-trip

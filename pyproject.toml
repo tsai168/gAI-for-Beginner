@@ -66,21 +66,11 @@ max-args = 10  # keyword-only ingestion/model helpers legitimately take many
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "."
+mypy_path = "src"
 packages = ["ingestion", "knowledge", "models", "agents", "workflows", "reports", "governance", "api", "ui"]
-strict = false
-warn_unused_ignores = false
+strict = true
+warn_unused_ignores = true
 warn_redundant_casts = true
-explicit_package_bases = true
-ignore_missing_imports = true
-disallow_subclassing_any = false
-exclude = [
-    'src/models/.*',
-]
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
