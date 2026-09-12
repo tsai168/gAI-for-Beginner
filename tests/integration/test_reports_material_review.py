@@ -75,6 +75,12 @@ def test_high_materiality_event_report_succeeds_once_event_cfl_approved(db_sessi
     )
     db_session.add(ev)
     db_session.flush()
+    # PENDING can't jump straight to APPROVED (Charter §17 state machine) —
+    # go through the real CFL-04 decision first (materiality_score=95 ->
+    # REVIEW-REQUIRED), then a human approves it, same as production.
+    RuleBasedCflService().submit_candidate(
+        db_session, table="event", row_id=ev.event_id, cfl_id=CflId.CFL_04
+    )
     RuleBasedCflService().set_status(
         db_session,
         table="event",
@@ -129,6 +135,11 @@ def test_event_study_report_is_always_material_review(db_session) -> None:  # ty
         benchmark_model=BenchmarkModel.MARKET_ADJUSTED,
         ar_series=[0.01, 0.02],
         model_version_id=mv.model_version_id,
+    )
+    # No materiality_score -> CFL-04 auto-passes (governance/cfl.py); still
+    # needs the AUTO-PASS -> APPROVED step, same PENDING-can't-skip rule.
+    RuleBasedCflService().submit_candidate(
+        db_session, table="event", row_id=ev.event_id, cfl_id=CflId.CFL_04
     )
     RuleBasedCflService().set_status(
         db_session,

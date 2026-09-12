@@ -266,6 +266,12 @@ class RuleBasedCflService:
                 text(f"UPDATE {table} SET cfl_status = :s WHERE {pk} = :id"),
                 {"s": target.value, "id": row_id},
             )
+        # This UPDATE goes around the ORM (generic, table-name-driven SQL —
+        # this module deliberately never imports model classes). Any ORM
+        # object already loaded for this row would otherwise keep serving
+        # its stale in-memory cfl_status forever, since nothing tells
+        # SQLAlchemy's identity map the row changed underneath it.
+        session.expire_all()
         record_decision(
             session,
             rule_ref=cfl_id.value,

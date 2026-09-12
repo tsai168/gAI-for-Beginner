@@ -203,13 +203,6 @@ def test_rbac_denies_review_queue_to_analyst(client: TestClient, db_session) -> 
     assert resp.json()["error_code"] == "G05-ERR-403"
 
 
-def test_dashboard_stub_returns_501(client: TestClient) -> None:
-    resp = client.get("/dashboard/seco-cmi")
-    assert resp.status_code == 501
-    assert resp.json()["error_code"] == "R03-ERR-501"
-
-
-def test_publications_approve_stub_returns_501(client: TestClient) -> None:
-    resp = client.post(f"/publications/{uuid.uuid4()}/approve")
-    assert resp.status_code == 501
-    assert resp.json()["error_code"] == "R06-ERR-501"
+# GET /dashboard/seco-cmi and POST /publications/{id}/approve were 501
+# stubs here at B9/B10; WBS-B11 wired both for real (ADR-0023) — see
+# tests/integration/test_api_reports_endpoints.py for their coverage now.
