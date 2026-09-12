@@ -460,6 +460,57 @@ class SourceSnapshot(Base):
     )
 
 
+# =====================================================================
+# WBS-B5b — §2.9 model-output tables (deferred from B1/B2, ADR-0003 G-1):
+# seco_score (M03) / cmi_score (M04). Bitemporal (valid_from/valid_to),
+# model_version_id mandatory (GP-10). ADR-0014.
+# =====================================================================
+
+
+class SecoScore(BitemporalMixin, AuditMixin, Base):
+    __tablename__ = "seco_score"
+
+    seco_score_id: Mapped[uuid.UUID] = _uuid_pk("seco_score_id")
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("company.company_id", ondelete="CASCADE"), nullable=False
+    )
+    as_of: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    score: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    tech_relevance: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    product_readiness: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    customer_validation: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    ecosystem_position: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    commercialization: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    strategic_defensibility: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    confidence: Mapped[float] = mapped_column(_UNIT, nullable=False)  # CF-15: mandatory
+    model_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("model_version.model_version_id", ondelete="RESTRICT"), nullable=False
+    )
+
+    __table_args__ = (Index("ix_seco_score_company_as_of", "company_id", "as_of"),)
+
+
+class CmiScore(BitemporalMixin, AuditMixin, Base):
+    __tablename__ = "cmi_score"
+
+    cmi_score_id: Mapped[uuid.UUID] = _uuid_pk("cmi_score_id")
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("company.company_id", ondelete="CASCADE"), nullable=False
+    )
+    as_of: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    score: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    foreign_inst_momentum: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    domestic_inst_momentum: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    margin_short: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    ownership_concentration: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    trading_structure: Mapped[float] = mapped_column(_SCORE, nullable=False)
+    model_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("model_version.model_version_id", ondelete="RESTRICT"), nullable=False
+    )
+
+    __table_args__ = (Index("ix_cmi_score_company_as_of", "company_id", "as_of"),)
+
+
 CFL_GOVERNED_TABLES: tuple[str, ...] = ("company", "relationship", "event", "evidence")
 APPEND_ONLY_TABLES: tuple[str, ...] = ("source_snapshot",)
 
