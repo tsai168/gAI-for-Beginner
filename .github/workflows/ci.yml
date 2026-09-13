@@ -22,6 +22,8 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
+      - name: Lint
+        run: npm run lint
       - name: Type check
         run: npm run type-check
       - name: Unit tests
@@ -91,8 +93,16 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U cpoai -d cpoai"
           --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - "6379:6379"
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       DATABASE_URL: postgresql+psycopg://cpoai:cpoai@localhost:5432/cpoai
+      REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v4
       - name: Install uv

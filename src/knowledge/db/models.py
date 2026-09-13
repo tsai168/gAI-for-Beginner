@@ -75,6 +75,24 @@ def _uuid_pk(name: str) -> Mapped[uuid.UUID]:
     )
 
 
+def _range_check(column: str, lo: float, hi: float, *, nullable: bool = True) -> CheckConstraint:
+    """DB-level backstop for score/confidence columns (WBS-B12 addendum,
+    ADR-0025 §2) — [0,1] for `_UNIT`/`_CONF`-typed columns, [0,100] for
+    `_SCORE`-typed ones, matching the bounds each M0x module's own
+    `_check_scale`/range check already enforces in Python (M02/M03/M04/M05).
+    Defense in depth, not a new business rule — the numbers here are read
+    off the existing application-level constants, not invented.
+
+    `name` is deliberately unprefixed: the naming_convention
+    (`"ck": "ck_%(table_name)s_%(constraint_name)s"`) adds the `ck_<table>_`
+    prefix itself, same as the existing `revision_seq_positive` constraint.
+    """
+    condition = f"{column} >= {lo} AND {column} <= {hi}"
+    if nullable:
+        condition = f"{column} IS NULL OR ({condition})"
+    return CheckConstraint(condition, name=f"{column}_range")
+
+
 # --- G04 model_version -----------------------------------------------------------
 
 
@@ -136,7 +154,13 @@ class Company(GovernedMixin, AuditMixin, Base):
         secondary=company_taxonomy, lazy="selectin"
     )
 
-    __table_args__ = (UniqueConstraint("stock_code", name="stock_code"),)
+    __table_args__ = (
+        UniqueConstraint("stock_code", name="stock_code"),
+        Index("ix_company_universe", "universe"),
+        Index("ix_company_company_name", "company_name"),
+        Index("ix_company_cfl_status", "cfl_status"),
+        _range_check("confidence", 0, 1),
+    )
 
 
 # --- K02 Technology / Taxonomy -------------------------------------------------
@@ -207,6 +231,8 @@ class Relationship(GovernedMixin, AuditMixin, Base):
     __table_args__ = (
         Index("ix_relationship_source", "source_entity_id"),
         Index("ix_relationship_target", "target_entity_id"),
+        Index("ix_relationship_cfl_status", "cfl_status"),
+        _range_check("confidence", 0, 1),
     )
 
 
@@ -271,8 +297,13 @@ class Event(ObservedTimeMixin, BitemporalMixin, GovernedMixin, AuditMixin, Base)
         Index("ix_event_event_taxonomy_code", "event_taxonomy_code"),
         Index("ix_event_event_trading_date", "event_trading_date"),
         Index("ix_event_correlation_id", "correlation_id"),
+        Index("ix_event_pipeline_status", "pipeline_status"),
+        Index("ix_event_cfl_status", "cfl_status"),
+        Index("ix_event_entity_id", "entity_id"),
         UniqueConstraint("event_id", "revision_seq", name="event_revision_seq"),
         CheckConstraint("revision_seq >= 1", name="revision_seq_positive"),
+        _range_check("confidence", 0, 1),
+        _range_check("materiality_score", 0, 100),
     )
 
 
@@ -315,6 +346,13 @@ class Evidence(ObservedTimeMixin, GovernedMixin, AuditMixin, Base):
         Index("ix_evidence_content_hash", "content_hash"),
         Index("ix_evidence_source_id", "source_id"),
         Index("ix_evidence_entity_ref", "entity_ref"),
+        Index("ix_evidence_cfl_status", "cfl_status"),
+        _range_check("confidence", 0, 1),
+        _range_check("authority", 0, 1),
+        _range_check("directness", 0, 1),
+        _range_check("time", 0, 1),  # DB column name (Python attr is time_, ADR-0007 §5)
+        _range_check("specificity", 0, 1),
+        _range_check("independence", 0, 1),
     )
 
 
@@ -520,7 +558,17 @@ class SecoScore(BitemporalMixin, AuditMixin, Base):
         ForeignKey("model_version.model_version_id", ondelete="RESTRICT"), nullable=False
     )
 
-    __table_args__ = (Index("ix_seco_score_company_as_of", "company_id", "as_of"),)
+    __table_args__ = (
+        Index("ix_seco_score_company_as_of", "company_id", "as_of"),
+        _range_check("score", 0, 100, nullable=False),
+        _range_check("tech_relevance", 0, 100, nullable=False),
+        _range_check("product_readiness", 0, 100, nullable=False),
+        _range_check("customer_validation", 0, 100, nullable=False),
+        _range_check("ecosystem_position", 0, 100, nullable=False),
+        _range_check("commercialization", 0, 100, nullable=False),
+        _range_check("strategic_defensibility", 0, 100, nullable=False),
+        _range_check("confidence", 0, 1, nullable=False),
+    )
 
 
 class CmiScore(BitemporalMixin, AuditMixin, Base):
@@ -541,7 +589,15 @@ class CmiScore(BitemporalMixin, AuditMixin, Base):
         ForeignKey("model_version.model_version_id", ondelete="RESTRICT"), nullable=False
     )
 
-    __table_args__ = (Index("ix_cmi_score_company_as_of", "company_id", "as_of"),)
+    __table_args__ = (
+        Index("ix_cmi_score_company_as_of", "company_id", "as_of"),
+        _range_check("score", 0, 100, nullable=False),
+        _range_check("foreign_inst_momentum", 0, 100, nullable=False),
+        _range_check("domestic_inst_momentum", 0, 100, nullable=False),
+        _range_check("margin_short", 0, 100, nullable=False),
+        _range_check("ownership_concentration", 0, 100, nullable=False),
+        _range_check("trading_structure", 0, 100, nullable=False),
+    )
 
 
 # =====================================================================
@@ -613,6 +669,8 @@ class ResearchReport(GovernedMixin, AuditMixin, Base):
     __table_args__ = (
         Index("ix_research_report_subject_ref", "subject_ref"),
         Index("ix_research_report_report_type", "report_type"),
+        Index("ix_research_report_cfl_status", "cfl_status"),
+        _range_check("confidence", 0, 1),
     )
 
 

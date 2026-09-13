@@ -1,5 +1,6 @@
-# B0.5 最小化開發環境：PostgreSQL 16 + pgvector，及 Temporal dev。
-# 僅供本機開發／CI，非部署拓撲（部署待 Operations 階段）。
+# B0.5 最小化開發環境：PostgreSQL 16 + pgvector、Temporal dev、I03 快取
+# （ADR-0025 §3；Redis，低風險預設，未設定 REDIS_URL 時應用層退回 in-memory
+# 快取，不強制依賴此服務）。僅供本機開發／CI，非部署拓撲（部署待 Operations 階段）。
 name: cpo-ai-dev
 
 services:
@@ -45,6 +46,16 @@ services:
       TEMPORAL_CORS_ORIGINS: http://localhost:8233
     ports:
       - "8233:8080"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
 volumes:
   db-data:
