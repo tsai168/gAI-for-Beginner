@@ -37,6 +37,15 @@ Work-1 的十層模組依賴方向固定為 D/P/K/M/A/W/R/G/U/I，R（Reporting�
 - `mypy src/reports/cache.py`（及全專案 63 檔案）在裝有真實 `redis` 套件的 venv 下通過，`RedisCache` 對 `_RedisLike` Protocol 的結構化型別檢查無誤。
 - 基礎設施：`infra/docker-compose.yml` 新增 `redis` service；CI `integration` job 新增 `redis` service container + `REDIS_URL` 環境變數，讓 `RedisCache` 分支在 CI 也被真實跑到（而非只有本機预设的 `InMemoryCache` 被覆蓋）；`.env.example` 的既有佔位改名 `CACHE_URL`→`REDIS_URL`（原註解「產品待 B5 定」已不合時宜，一併更新為指向本 ADR）。
 
+### 2.5 CI 第一次跑，真的抓到兩個問題——記錄下來，不是船過水無痕
+
+推上 CI（`#114`）後 `integration` job 真的紅了 2 個測試，兩個都循實際錯誤訊息追根因，而非憑印象亂猜：
+
+1. `test_dashboard_serves_stale_data_within_ttl_then_refreshes` 丟 `MultipleResultsFound`：測試為了模擬「DB 換了新分數」，對同一間公司呼叫了兩次 `record_seco_score`——但這個函式只負責新增,不負責讓舊列退場;正確作法是`correct_seco_score`(GP-10/CF-17既有機制,`test_seco_cmi_db.py`已經這樣用過),測試沒照做,不是`cache.py`的錯。已修正。
+2. `test_reports_internal_auto.py::test_dashboard_lists_companies_with_a_current_score`(B11既有測試,跟本次新增檔案無關)因為`get_seco_cmi_dashboard`的清單快取用單一固定 key,而 CI `integration` job 現在真的接了共用 Redis(本 ADR §2.4 剛加的),同一個 60 秒 TTL 視窗內任何沒自帶`cache=`的呼叫都共用同一份快取——`db_session`的逐測試 rollback 保護不到這種活在 DB 交易之外的資源。修正方式:`tests/conftest.py`加一個 autouse fixture,每個測試開始前清掉這個固定 key(每間公司自己的 cache key 因為 company_id 每次都是新 UUID,不會撞,不用清)。
+
+兩者都只能在 CI 才會現形——本沙盒沒有 Postgres/Redis,`pytest -m integration`在本機是整批 skip,不是真的跑過再過關。修正後重推(`cff45c9`),CI `#115` 四個 job 全綠,`integration (db)`(36s)本身也通過。
+
 ## 3. 索引／約束稽核
 
 ### 3.1 方法：逐一比對，非臆測
@@ -61,19 +70,22 @@ Work-1 的十層模組依賴方向固定為 D/P/K/M/A/W/R/G/U/I，R（Reporting�
 
 `tests/integration/test_index_constraint_audit.py`：對真實 Postgres，直接下 `UPDATE ... SET confidence = 1.5` 之類的越界值，驗證 DB 層真的擋下（`DBAPIError` 訊息含約束名）；正常值可正常寫入；並對 7 組 table/index 查 `pg_indexes` 系統目錄確認索引確實存在。
 
-## 4. ESLint／`package-lock.json`：環境限制仍然存在，誠實回報
+## 4. ESLint——已寫且已由 CI 真實驗證通過；`package-lock.json` 環境限制仍在
 
-本次 session 再次確認：沙盒環境無 Node.js／npm（`which node npm` 無輸出），與 B10 批次（`ADR-0022` §1）完全相同的限制，並非本次新出現的問題，也不是決策懸而未決。
+本次 session 再次確認：本地開發沙盒無 Node.js／npm（`which node npm` 無輸出），與 B10 批次（`ADR-0022` §1）完全相同的限制。但這**不等於「無法驗證」**——CI runner 本身就有真正的 Node.js 20，所以把驗證責任交給 CI 是誠實可行的路徑，不是迴避。
 
-- **已完成、但無法本地驗證**：撰寫 `frontend/eslint.config.js`（ESLint 9 flat config，`typescript-eslint` + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh`，比照 Vite React-TS 官方模板慣例，設定與 `tsconfig.json` 的 strict／ES2020／react-jsx 一致）；`frontend/package.json` 新增對應 `devDependencies` 與 `"lint": "eslint ."` script；CI 的 `frontend` job 新增 `npm run lint` 步驟（排在 type-check 之前）。**這一整組設定從未在有 Node.js 的環境下實際執行過一次**，規則版本相容性、flat-config 語法正確性都只能等下一次 CI 真正跑 `npm install && npm run lint` 時才會知道是否成功——這與 B12 對「負載測試」的誠實縮小範圍是同一種態度：做了但沒驗證的部分，明確說沒驗證，不假裝已經測過。
-- **仍然做不到**：`package-lock.json` 依然無法產生——鎖檔案的正確內容只能來自真實 `npm install` 的解析結果，手工偽造等同說謊（`ADR-0022` §1 已有此原則）。CI 的 `frontend` job 繼續使用 `npm install`（非 `npm ci`）。待任一次 CI 成功執行 `npm install`（含新的 ESLint 相關套件）後，建議下載其產生的 lockfile 提交回 repo，才能把 `npm install` 換回 `npm ci`——這點與 `ADR-0022` §5 的既有待辦一致，只是待辦內容從「原本的依賴」擴大為「原本的依賴＋新的 ESLint 相關套件」。
+- 撰寫 `frontend/eslint.config.js`（ESLint 9 flat config，`typescript-eslint` + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh`，比照 Vite React-TS 官方模板慣例，設定與 `tsconfig.json` 的 strict／ES2020／react-jsx 一致）；`frontend/package.json` 新增對應 `devDependencies` 與 `"lint": "eslint ."` script；CI 的 `frontend` job 新增 `npm run lint` 步驟（排在 type-check 之前）。
+- **CI `#114`／`#115` 的 `frontend (type + test + build)` job 皆為 Success**（`npm install` 成功解析新的 ESLint 相關套件、`npm run lint` 本身乾淨通過、`type-check`／`test`／`build` 也都沒受影響）——這組設定已經是**經過真實 Node.js 環境驗證過的**，不再是「未驗證」狀態，本節先前版本的措辭已過時。
+- **`package-lock.json` 依然無法在本地產生**：鎖檔案的正確內容只能來自真實 `npm install` 的解析結果，手工偽造等同說謊（`ADR-0022` §1 已有此原則）；CI 的 `frontend` job 繼續使用 `npm install`（非 `npm ci`）。既然 CI `#115` 的 `npm install` 已經成功解析出一組完整、可行的版本組合，建議下載該次 run 的 lockfile 提交回 repo，才能把 `npm install` 換回 `npm ci`——這是 `ADR-0022` §5 既有待辦的延伸，現在有了一個具體可行動的 CI run 可以取用。
 
 ## 5. 驗收
 
-本地驗證（新鮮 venv，無 `DATABASE_URL`／`REDIS_URL`）：`ruff check .`／`ruff format --check .`／`mypy src`（全部通過，模組數隨新檔案增加）／`pytest`（單元測試全過；`integration`／`migration` 標記測試因無 Postgres/Redis 而 skip，非 fail）／`alembic upgrade head --sql` 與 `alembic downgrade --sql head:base` 兩個方向皆能乾淨渲染。ESLint 部分**未經任何實際執行驗證**（§4 已詳述原因），留待有 Node.js 的環境（例如 CI）跑出第一次真實結果。
+本地驗證（新鮮 venv，無 `DATABASE_URL`／`REDIS_URL`）：`ruff check .`／`ruff format --check .`／`mypy src`（全部通過，模組數隨新檔案增加）／`pytest`（單元測試全過；`integration`／`migration` 標記測試因無 Postgres/Redis 而 skip，非 fail）／`alembic upgrade head --sql` 與 `alembic downgrade --sql head:base` 兩個方向皆能乾淨渲染。
+
+CI 驗收（真正決定性的一關，因為本地缺 Postgres/Redis/Node.js）：`#114`（`e4f1b1d`）首次推上時 `integration (db)` 兩個測試失敗（§2.5 已詳述根因與修法），修正後 `#115`（`cff45c9`）**四個 job 全綠**——`frontend (type + test + build)` 35s、`lint + type + unit` 22s、`alembic round-trip` 29s、`integration (db)` 36s。ESLint 與 I03/Redis 的 `RedisCache` 分支都是在這次才第一次被真實環境驗證，不是本機臆測。
 
 ## 6. 後續（非本批範圍）
 
-1. 待 CI 首次成功執行 `npm run lint`／`npm install` 後，回頭確認 ESLint 規則是否需要調整、並取回 `package-lock.json` 提交回 repo（`ADR-0022` §5 既有待辦的延伸）。
+1. 下載 CI `#115`（`cff45c9`）`npm install` 產生的 `package-lock.json` 提交回 repo，並把 `frontend` job 的 `npm install` 換回 `npm ci`（`ADR-0022` §5 既有待辦，現已有可行動的具體 run）。
 2. I03 快取的 60 秒 TTL 為初始預設值，若儀表板實際流量顯示過短／過長，可調整（設定值形式，非寫死契約）。
 3. `ADR-0024` §7 列出的其餘後續項目（A01–A06 LLM 整合、I01–I06 部署基礎設施等）維持原狀，不受本 ADR 影響。
