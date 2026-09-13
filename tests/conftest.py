@@ -15,6 +15,8 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from knowledge.db.session import get_engine
+from reports.cache import get_cache_backend
+from reports.dashboard import _DASHBOARD_CACHE_KEY
 
 _HAS_DB = bool(os.environ.get("DATABASE_URL"))
 
@@ -31,6 +33,18 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 @pytest.fixture(scope="session")
 def db_engine() -> Engine:
     return get_engine()
+
+
+@pytest.fixture(autouse=True)
+def _reset_dashboard_cache() -> None:
+    """I03 (ADR-0025 §2): `get_seco_cmi_dashboard`'s list is cached under one
+    fixed key, outside any test's DB transaction — with a real, shared
+    REDIS_URL (as CI's `integration` job now sets), a value one test caches
+    would otherwise leak into whichever test runs next within the TTL. Clear
+    it before every test so cache state never crosses test boundaries.
+    Per-company keys aren't at risk here: each test's company gets a fresh
+    UUID, so they never collide."""
+    get_cache_backend().delete(_DASHBOARD_CACHE_KEY)
 
 
 @pytest.fixture

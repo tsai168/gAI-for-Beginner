@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 import pytest
 
 from knowledge.db.models import Company, ModelVersion
-from models.seco import SecoDimensions, record_seco_score
+from models.seco import SecoDimensions, correct_seco_score, record_seco_score
 from reports.cache import InMemoryCache
 from reports.dashboard import get_company_scores, get_seco_cmi_dashboard
 
@@ -44,7 +44,7 @@ def _model_version(db_session, label: str):  # type: ignore[no-untyped-def]
 def test_dashboard_serves_stale_data_within_ttl_then_refreshes(db_session) -> None:  # type: ignore[no-untyped-def]
     company = _company(db_session)
     mv1 = _model_version(db_session, "cache-v1")
-    record_seco_score(
+    score_v1 = record_seco_score(
         db_session,
         company_id=company.company_id,
         as_of=RETRIEVED,
@@ -61,12 +61,13 @@ def test_dashboard_serves_stale_data_within_ttl_then_refreshes(db_session) -> No
     assert first is not None
     assert first.seco_score == pytest.approx(40.0)
 
-    # a real change lands in the DB...
+    # a real change lands in the DB — GP-10/CF-17: never overwrite the old
+    # row, retire it (valid_to) and open a new one, same as production code
+    # does for any Seco re-score.
     mv2 = _model_version(db_session, "cache-v2")
-    record_seco_score(
+    correct_seco_score(
         db_session,
-        company_id=company.company_id,
-        as_of=RETRIEVED,
+        score_v1,
         dims=SecoDimensions(90, 90, 90, 90, 90, 90),
         confidence=0.9,
         model_version_id=mv2.model_version_id,
