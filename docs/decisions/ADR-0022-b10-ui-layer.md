@@ -43,8 +43,8 @@ Work-1 §3.9 把 U01–U04 定義為畫面，不是身分提供者整合；真�
 
 ## 5. 待確認 / 後續
 
-1. **ESLint**：本批未設定（§1）——待有 Node.js 可本地驗證的環境時補上。
-2. **`package-lock.json`**：待任一次 CI 的 `npm install` 成功後，取回其鎖檔提交，把 `npm install` 換回 `npm ci`。
+1. ~~**ESLint**：本批未設定（§1）——待有 Node.js 可本地驗證的環境時補上。~~ 已於 `ADR-0025` §4 補上並由 CI（真實 Node.js）驗證通過。
+2. ~~**`package-lock.json`**：待任一次 CI 的 `npm install` 成功後，取回其鎖檔提交，把 `npm install` 換回 `npm ci`。~~ 已完成——見 `ADR-0025` §6。
 3. **OIDC 登入流程**：`TokenInput` 只是誠實的過渡方案；真正的登入（redirect/PKCE/refresh token）需要另立設計，非本批範圍。
 4. **Relationship／Evidence 清單端點**：U04 CFL Queue 目前只涵蓋 Company／Event；若要完整涵蓋全部 `CFL_GOVERNED_TABLES`，需要對 Work-2 §4.2 提出正式 Change Request 新增 `GET /relationships`、某種 Evidence 查詢端點，而非本批單方面決定新增。
 5. Work-3 之後：**B11**（R01–R06 全部報告輸出；含 Internal Auto／Material Review／External Approval 三層，R06 正式外部發布須先通過 CFL-08）——完成後，U01 的 Seco／CMI 儀表板與 `POST /publications/{id}/approve` 才能從 501 換成真實邏輯。

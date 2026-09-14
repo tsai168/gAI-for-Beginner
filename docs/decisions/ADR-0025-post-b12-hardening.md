@@ -86,6 +86,6 @@ CI 驗收（真正決定性的一關，因為本地缺 Postgres/Redis/Node.js）
 
 ## 6. 後續（非本批範圍）
 
-1. 下載 CI `#115`（`cff45c9`）`npm install` 產生的 `package-lock.json` 提交回 repo，並把 `frontend` job 的 `npm install` 換回 `npm ci`（`ADR-0022` §5 既有待辦，現已有可行動的具體 run）。
+1. ~~下載 CI `#115`（`cff45c9`）`npm install` 產生的 `package-lock.json` 提交回 repo，並把 `frontend` job 的 `npm install` 換回 `npm ci`。~~ **已完成**：CI `#117`（`6115bb0`）加了一個臨時的 `actions/upload-artifact` 步驟把 `npm install` 真正解析出的 `package-lock.json` 存成 artifact，人工下載後放回 repo；隨即把 CI 的 `npm install` 換回 `npm ci`、移除該臨時步驟。`ADR-0022` §5 這一項就此結案。
 2. I03 快取的 60 秒 TTL 為初始預設值，若儀表板實際流量顯示過短／過長，可調整（設定值形式，非寫死契約）。
 3. `ADR-0024` §7 列出的其餘後續項目（A01–A06 LLM 整合、I01–I06 部署基礎設施等）維持原狀，不受本 ADR 影響。
