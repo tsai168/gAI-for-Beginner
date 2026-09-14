@@ -22,6 +22,13 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
+      # ADR-0022 §5 / ADR-0025 §6 — temporary, to retrieve a real npm-resolved
+      # lockfile; remove this step once package-lock.json is committed.
+      - name: Upload package-lock.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: frontend/package-lock.json
       - name: Lint
         run: npm run lint
       - name: Type check
