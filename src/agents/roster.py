@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from agents.base import Agent
+from agents.extraction import ExtractionOutcome, ExtractionRequest, extract_evidence_from_snapshot
 from governance.autonomy import ActionKind
 
 
@@ -17,8 +18,18 @@ class ExtractionAgent(Agent):  # A01
     agent_id = "A01"
     action_kind = ActionKind.WRITE_CANDIDATE
 
-    def _perform(self, payload: Any) -> Any:
-        raise NotImplementedError("A01 extraction (LLM) deferred — no prompt/schema spec yet")
+    def _perform(self, payload: ExtractionRequest) -> ExtractionOutcome:
+        evidence, unknown = extract_evidence_from_snapshot(
+            payload.session,
+            snapshot_text=payload.snapshot_text,
+            content_hash=payload.content_hash,
+            retrieved_at=payload.retrieved_at,
+            source_id=payload.source_id,
+            source_credibility_tier=payload.source_credibility_tier,
+            watchlist_companies=payload.watchlist_companies,
+            llm_client=payload.llm_client,
+        )
+        return ExtractionOutcome(evidence=evidence, unknown_company_mentions=unknown)
 
 
 class ClassificationAgent(Agent):  # A02

@@ -19,7 +19,10 @@ def test_all_eight_agents_registered() -> None:
     assert {cls.agent_id for cls in ALL_AGENTS} == {f"A0{i}" for i in range(1, 9)}
 
 
-@pytest.mark.parametrize("agent_cls", ALL_AGENTS)
+_STILL_UNIMPLEMENTED = [cls for cls in ALL_AGENTS if cls is not ExtractionAgent]
+
+
+@pytest.mark.parametrize("agent_cls", _STILL_UNIMPLEMENTED)
 def test_run_passes_gate_then_defers_to_not_implemented(agent_cls: type[Agent]) -> None:
     agent = agent_cls()
     with pytest.raises(NotImplementedError):

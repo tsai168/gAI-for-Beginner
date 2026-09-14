@@ -103,6 +103,10 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://cpoai:cpoai@localhost:5432/cpoai
       REDIS_URL: redis://localhost:6379/0
+      # ADR-0026 §5: optional — unset until a real key is added as a repo
+      # secret, in which case test_extraction_llm.py starts running for
+      # real instead of skipping; no code change needed either way.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
